@@ -1,0 +1,8 @@
+# Variables de entorno
+.env
+
+# Carpetas de Node (para cuando iniciemos el backend y frontend)
+node_modules/
+dist/
+coverage/
+build/

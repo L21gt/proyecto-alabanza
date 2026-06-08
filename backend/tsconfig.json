@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2022" /* Versión de JavaScript a compilar */,
+    "module": "commonjs" /* Sistema de módulos clásico de Node */,
+    "rootDir": "./src" /* Carpeta base de tu código */,
+    "outDir": "./dist" /* Carpeta donde irá el código compilado */,
+    "esModuleInterop": true /* Soluciona problemas de importación (CORS, Express) */,
+    "forceConsistentCasingInFileNames": true /* Asegura compatibilidad en Windows/Linux */,
+    "strict": true /* Activa verificaciones estrictas útiles */,
+    "skipLibCheck": true /* Evita chequear errores dentro de node_modules */,
+    "types": [
+      "jest",
+      "node"
+    ] /* Le dice a TS que reconozca describe, it, expect */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
