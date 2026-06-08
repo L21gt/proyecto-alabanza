@@ -1,0 +1,63 @@
+name: Validacion Estricta - Backend
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    # Levantamos una base de datos PostgreSQL efímera para las pruebas
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Le indicamos a GitHub que ejecute los comandos dentro de la carpeta backend
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: 📥 Clonar el código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🗄️ Estructurar Base de Datos de Prueba
+        env:
+          PGPASSWORD: test_password
+        # Instalamos el cliente de postgres e inyectamos tu script init.sql
+        run: |
+          sudo apt-get install -y postgresql-client
+          psql -h localhost -U test_user -d test_db -f ./database/init.sql
+
+      - name: 🧪 Ejecutar Pruebas y Validar Cobertura (>80%)
+        env:
+          # Inyectamos variables de entorno seguras para la prueba en la nube
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: test_db
+          JWT_SECRET: super_secreto_ci_cd
+        run: npm run test:coverage
