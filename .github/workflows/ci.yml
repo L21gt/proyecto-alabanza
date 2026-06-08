@@ -49,7 +49,7 @@ jobs:
         # Instalamos el cliente de postgres e inyectamos tu script init.sql
         run: |
           sudo apt-get install -y postgresql-client
-          psql -h localhost -U test_user -d test_db -f ./database/init.sql
+          psql -h localhost -U test_user -d test_db -f ${{ github.workspace }}/backend/database/init.sql
 
       - name: 🧪 Ejecutar Pruebas y Validar Cobertura (>80%)
         env:
