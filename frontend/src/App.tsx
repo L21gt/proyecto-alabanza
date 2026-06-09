@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Catalogo from './pages/Catalogo';
 import './index.css';
 
 function App() {
-  // Inicializamos el estado del tema leyendo la preferencia guardada, o por defecto 'light'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
   });
 
-  // Cada vez que 'theme' cambie, actualizamos el HTML y guardamos en localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
@@ -18,20 +19,29 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Biblioteca de Alabanzas</h1>
-        <button className="btn-primary" onClick={toggleTheme}>
-          Modo {theme === 'light' ? 'Oscuro' : 'Claro'}
-        </button>
-      </header>
-      
-      <main>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          El frontend se ha inicializado correctamente. Aquí construiremos el catálogo y las hojas de canciones.
-        </p>
-      </main>
-    </div>
+    <BrowserRouter>
+      <div className="container">
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h1>Biblioteca de Alabanzas</h1>
+          <button className="btn-primary" onClick={toggleTheme}>
+            Modo {theme === 'light' ? 'Oscuro' : 'Claro'}
+          </button>
+        </header>
+        
+        <main>
+          <Routes>
+            {/* Ruta base redirige a login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            
+            {/* Pantalla de Autenticación */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Placeholder para el catálogo que haremos después */}
+            <Route path="/catalogo" element={<Catalogo />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
   );
 }
 

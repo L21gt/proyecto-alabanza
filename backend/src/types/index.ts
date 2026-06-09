@@ -8,3 +8,16 @@ export interface AuthRequest extends Request {
     status: string;
   };
 }
+
+export interface Song {
+  id: number;
+  title: string;
+  author: string;
+  original_key: string;
+  tempo: number;
+  category: string;
+  content: string;
+  themes: string[];
+  created_at?: string;
+  updated_at?: string;
+}
