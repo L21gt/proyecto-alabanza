@@ -145,12 +145,12 @@ describe('Módulo de Canciones', () => {
 
     it('Debería retornar la canción transpuesta (+2 semitonos) si se incluye en la URL', async () => {
       const res = await request(app)
-        .get(`/api/songs/${testSongId}?semitones=2`)
+        .get(`/api/songs/${testSongId}?transpose=2`)
         .set('Authorization', `Bearer ${tokenMusico}`);
 
       expect(res.status).toBe(200);
       // La tonalidad original de nuestra prueba era 'G', +2 debe ser 'A'
-      expect(res.body.song).toHaveProperty('current_key', 'A');
+      expect(res.body.song).toHaveProperty('original_key', 'A');
       // El contenido debía actualizar G a A manteniendo el texto
       expect(res.body.song.content).toContain('A\nBueno es alabarte oh Señor');
     });
