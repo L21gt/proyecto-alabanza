@@ -108,7 +108,9 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
 export const getSongById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { semitones } = req.query; // Leemos si el usuario pidió transponer
+    
+    // CORRECCIÓN 1: Leemos "transpose" en lugar de "semitones" porque así lo envía el frontend
+    const { transpose } = req.query; 
 
     const songResult = await pool.query('SELECT * FROM songs WHERE id = $1', [id]);
     
@@ -131,12 +133,14 @@ export const getSongById = async (req: Request, res: Response): Promise<void> =>
     // ============================================
     // LÓGICA DE TRANSPOSICIÓN AL VUELO
     // ============================================
-    song.current_key = song.original_key; // Por defecto la tonalidad actual es la original
-
-    if (semitones && !isNaN(Number(semitones))) {
-      const steps = Number(semitones);
-      // Actualizamos la tonalidad base (Ej. C -> D)
-      song.current_key = transposeChord(song.original_key, steps);
+    
+    // CORRECCIÓN 2: Evaluamos "transpose"
+    if (transpose && !isNaN(Number(transpose))) {
+      const steps = Number(transpose);
+      
+      // CORRECCIÓN 3: Sobrescribimos original_key para que el frontend lo lea y cambie la insignia visual
+      song.original_key = transposeChord(song.original_key, steps);
+      
       // Transponemos todo el bloque de texto
       song.content = transposeSongContent(song.content, steps);
     }

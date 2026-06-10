@@ -51,19 +51,19 @@ const Catalogo: React.FC = () => {
     <div className="catalogo-container">
       <div className="catalogo-header">
         <h2 className="catalogo-title">Repertorio</h2>
-        <button className="btn-primary" onClick={() => alert('Próximamente: Crear canción')}>
+        <button className="btn-primary" onClick={() => navigate('/cancion/nueva')}>
           + Nueva Canción
         </button>
       </div>
 
-      {songs.length === 0 ? (
+      {(!songs || songs.length === 0) ? (
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
           No hay canciones en el catálogo. ¡Agrega la primera!
         </p>
       ) : (
         <div className="songs-grid">
           {songs.map((song) => (
-            <div key={song.id} className="song-card" onClick={() => alert(`Abriendo: ${song.title}`)}>
+            <div key={song.id} className="song-card" onClick={() => navigate(`/cancion/${song.id}`)}>
               <div>
                 <h3 className="song-title">{song.title}</h3>
                 <p className="song-author">{song.author}</p>
@@ -74,7 +74,7 @@ const Catalogo: React.FC = () => {
               </div>
               
               <div className="themes-container">
-                {song.themes.map((theme, index) => (
+                {song.themes?.map((theme, index) => (
                   <span key={index} className="theme-tag">
                     #{theme}
                   </span>

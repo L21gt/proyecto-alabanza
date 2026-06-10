@@ -22,5 +22,51 @@ export const getSongs = async (): Promise<Song[]> => {
   }
 
   const data = await response.json();
-  return data.songs;
+  // Extraemos 'songs' si viene en un objeto, o devolvemos la data directa si es un arreglo, o un arreglo vacío por defecto.
+  return data.songs || data || [];
+};
+
+export const getSongById = async (id: string, transposeOffset: number = 0): Promise<Song> => {
+  const token = localStorage.getItem('token');
+  
+  // Si hay un offset de transposición, lo agregamos a la URL
+  const url = transposeOffset !== 0 
+    ? `${API_URL}/${id}?transpose=${transposeOffset}`
+    : `${API_URL}/${id}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Error al obtener los detalles de la canción');
+  }
+
+  const data = await response.json();
+  return data.song || data; 
+};
+
+export const createSong = async (songData: Omit<Song, 'id' | 'created_at' | 'updated_at'>): Promise<Song> => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(songData)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Error al guardar la canción');
+  }
+
+  return data;
 };

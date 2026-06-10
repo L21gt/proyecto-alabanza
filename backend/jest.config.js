@@ -14,6 +14,7 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
+  setupFiles: ["<rootDir>/jest.setup.js"],
   // Directorios donde Jest buscará las pruebas
   testMatch: ["**/__tests__/**/*.test.ts"],
   // Habilitar la recolección de cobertura por defecto

@@ -17,6 +17,9 @@ const FLATS_TO_SHARPS: Record<string, string> = {
  * @returns El nuevo acorde transpuesto
  */
 export const transposeChord = (chord: string, semitones: number): string => {
+  // Si el token es un guion separador, lo devolvemos intacto inmediatamente
+  if (chord === '-') return chord;
+
   // Regex: 
   // Grupo 1: Captura la nota raíz de la A a la G, seguida opcionalmente de un # o b
   // Grupo 2: Captura todo lo demás (m, 7, maj7, sus4, etc.)
@@ -50,9 +53,9 @@ export const transposeChord = (chord: string, semitones: number): string => {
   return CHROMATIC_SCALE[newIndex] + modifier;
 };
 
-// Regex estricta para identificar si una palabra es exclusivamente un acorde 
-// (Ej. acepta "Am", "G/B", "Cmaj7", pero rechaza "A ti")
-const STRICT_CHORD_REGEX = /^[A-G][#b]?(m|maj7|maj|min|sus2|sus4|sus|dim|aug|[0-9])*((\/)[A-G][#b]?)?$/;
+// Regex estricta para identificar si una palabra es exclusivamente un acorde O UN GUION (-)
+// (Ej. acepta "Am", "G/B", "Cmaj7", "-", pero rechaza "A ti")
+const STRICT_CHORD_REGEX = /^([A-G][#b]?(m|maj7|maj|min|sus2|sus4|sus|dim|aug|[0-9])*((\/)[A-G][#b]?)?|-)$/;
 
 /**
  * Transpone el bloque completo de texto de una canción.
@@ -68,7 +71,7 @@ export const transposeSongContent = (content: string, semitones: number): string
     const words = line.trim().split(/\s+/);
     if (words.length === 0 || words[0] === '') return line;
 
-    // Si TODAS las palabras de la línea parecen acordes, confirmamos que es una línea de acordes
+    // Si TODAS las palabras de la línea parecen acordes o guiones, confirmamos que es una línea de acordes
     const isChordLine = words.every(word => STRICT_CHORD_REGEX.test(word));
 
     if (isChordLine) {
