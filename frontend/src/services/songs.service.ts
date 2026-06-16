@@ -70,3 +70,38 @@ export const createSong = async (songData: Omit<Song, 'id' | 'created_at' | 'upd
 
   return data;
 };
+
+export const updateSong = async (id: string, songData: Omit<Song, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(songData)
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Error al actualizar la canción');
+  }
+};
+
+export const deleteSong = async (id: string): Promise<void> => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Error al eliminar la canción');
+  }
+};

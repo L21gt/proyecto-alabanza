@@ -5,6 +5,7 @@ import Catalogo from './pages/Catalogo';
 import './index.css';
 import CancionDetalle from './pages/CancionDetalle';
 import CancionForm from './pages/CancionForm';
+import CancionEdit from './pages/CancionEdit';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -45,6 +46,8 @@ function App() {
             <Route path="/cancion/:id" element={<CancionDetalle />} />
             {/* Formulario para crear nueva canción */}
             <Route path="/cancion/nueva" element={<CancionForm />} />
+            {/* Formulario para editar canción existente */}
+            <Route path="/cancion/:id/editar" element={<CancionEdit />} />
           </Routes>
         </main>
       </div>

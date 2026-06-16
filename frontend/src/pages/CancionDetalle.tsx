@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSongById } from '../services/songs.service';
+import { getSongById, deleteSong } from '../services/songs.service';
 import type { Song } from '../types';
 import './CancionDetalle.css';
 
@@ -11,8 +11,6 @@ const CancionDetalle: React.FC = () => {
   const [song, setSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Estado para llevar el control de los semitonos que subimos o bajamos
   const [transposeOffset, setTransposeOffset] = useState(0);
 
   useEffect(() => {
@@ -23,30 +21,43 @@ const CancionDetalle: React.FC = () => {
         const data = await getSongById(id, transposeOffset);
         setSong(data);
       } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        }
+        console.error("Error al cargar la canción:", err);
+        setError('Error al obtener los detalles de la canción');
       } finally {
         setLoading(false);
       }
     };
 
     fetchSong();
-  }, [id, transposeOffset]); // Se vuelve a ejecutar si cambia el ID o la transposición
+  }, [id, transposeOffset]);
 
   const handleTranspose = (amount: number) => {
     setTransposeOffset(prev => prev + amount);
   };
 
-  if (loading && !song) return <div style={{ textAlign: 'center', padding: '3rem' }}>Cargando canción...</div>;
+  const handleDeleteDirect = async () => {
+    if (!id) return;
+
+    const confirmDelete = window.confirm('¿Está seguro de que desea eliminar esta canción?');
+    if (!confirmDelete) return;
+
+    try {
+      await deleteSong(id);
+      navigate('/catalogo');
+    } catch (err) {
+      console.error("Error al eliminar:", err);
+      setError('Ocurrió un error al intentar eliminar la canción.');
+    }
+  };
+
+  if (loading && !song) return <div className="loading-message">Cargando canción...</div>;
   if (error) return <div className="error-message">{error}</div>;
-  if (!song) return <div style={{ textAlign: 'center' }}>Canción no encontrada</div>;
+  if (!song) return <div className="not-found-message">Canción no encontrada</div>;
 
   return (
     <div className="detalle-container">
       <button 
-        className="btn-primary" 
-        style={{ marginBottom: '1rem', backgroundColor: 'var(--text-secondary)' }}
+        className="btn-back" 
         onClick={() => navigate('/catalogo')}
       >
         &larr; Volver al catálogo
@@ -59,7 +70,7 @@ const CancionDetalle: React.FC = () => {
 
       <div className="controls-panel">
         <div className="control-group">
-          <span style={{ fontWeight: 500 }}>Tonalidad:</span>
+          <span className="control-label">Tonalidad:</span>
           <button className="btn-circle" onClick={() => handleTranspose(-1)} disabled={loading}>-</button>
           <span className="key-display">{song.original_key}</span>
           <button className="btn-circle" onClick={() => handleTranspose(1)} disabled={loading}>+</button>
@@ -67,8 +78,7 @@ const CancionDetalle: React.FC = () => {
         
         {transposeOffset !== 0 && (
           <button 
-            className="btn-primary" 
-            style={{ padding: '0.3rem 0.8rem', fontSize: '0.9rem' }}
+            className="btn-restore" 
             onClick={() => setTransposeOffset(0)}
             disabled={loading}
           >
@@ -76,9 +86,27 @@ const CancionDetalle: React.FC = () => {
           </button>
         )}
         
-        <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+        <span className="tempo-display">
           Tempo: {song.tempo} BPM
         </span>
+
+        <div className="action-buttons">
+          <button 
+            className="btn-edit" 
+            onClick={() => navigate(`/cancion/${id}/editar`)}
+            disabled={loading}
+          >
+            Editar
+          </button>
+
+          <button 
+            className="btn-delete-small" 
+            onClick={handleDeleteDirect}
+            disabled={loading}
+          >
+            Eliminar
+          </button>
+        </div>
       </div>
 
       <div className="lyric-content">
