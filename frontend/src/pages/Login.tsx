@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../services/auth.service';
+import { login as loginService, register as registerService } from '../services/auth.service';
 import './Login.css';
 
 const Login: React.FC = () => {
+  const [isLogin, setIsLogin] = useState(true); // Controla si mostramos Login o Registro
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Hook de React Router para cambiar de página
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,19 +17,24 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const data = await loginUser(email, password);
-      
-      // Guardamos el token en localStorage para mantener la sesión
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Si el login es exitoso, viajamos al catálogo
-      navigate('/catalogo');
+      if (isLogin) {
+        // Flujo de Iniciar Sesión
+        const response = await loginService(email, password);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userRole', response.user.role);
+        navigate('/catalogo');
+      } else {
+        // Flujo de Registro
+        await registerService(email, password);
+        // Si el registro es exitoso, pasamos automáticamente al modo Login para que entre
+        setIsLogin(true);
+        setError('Cuenta creada con éxito. Ahora puedes iniciar sesión.'); // Usamos el área de error como mensaje de éxito temporal
+      }
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Ocurrió un error desconocido');
+        setError('Ocurrió un error inesperado');
       }
     } finally {
       setIsLoading(false);
@@ -40,52 +44,71 @@ const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2 className="login-title" id="login-heading">Iniciar Sesión</h2>
+        <h2 className="login-title">
+          {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+        </h2>
         
         {error && (
-          <div className="error-message" id="login-error-alert" role="alert">
+          <div className="error-message" style={{ backgroundColor: error.includes('éxito') ? '#dcfce3' : '#fee2e2', color: error.includes('éxito') ? '#166534' : '#991b1b' }}>
             {error}
           </div>
         )}
-        
-        <form onSubmit={handleSubmit} id="login-form">
+
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email-input" className="form-label">Correo Electrónico</label>
+            <label className="form-label" htmlFor="email">Correo Electrónico</label>
             <input
+              id="email"
               type="email"
-              id="email-input"
               className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="usuario@iglesia.com"
-              autoComplete="email"
             />
           </div>
-          
+
           <div className="form-group">
-            <label htmlFor="password-input" className="form-label">Contraseña</label>
+            <label className="form-label" htmlFor="password">Contraseña</label>
             <input
+              id="password"
               type="password"
-              id="password-input"
               className="form-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="••••••••"
-              autoComplete="current-password"
             />
           </div>
-          
-          <button 
-            type="submit" 
-            className="btn-primary btn-submit" 
-            id="login-submit-btn"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Verificando...' : 'Entrar'}
+
+          <button type="submit" className="btn-primary" disabled={isLoading}>
+            {isLoading 
+              ? 'Procesando...' 
+              : isLogin ? 'Ingresar' : 'Registrarse'}
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes una cuenta?'}
+            <button 
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+              }}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--accent-color)', 
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                marginLeft: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

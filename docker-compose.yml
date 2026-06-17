@@ -6,7 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: alabanza_db
     environment:
-      # Usa tu .env local, o los valores genéricos si alguien más lo clona
+      # Usa .env local, o los valores genéricos si alguien más lo clona
       POSTGRES_USER: ${POSTGRES_USER:-admin_test}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password_test}
       POSTGRES_DB: ${POSTGRES_DB:-proyecto_alabanza_test}

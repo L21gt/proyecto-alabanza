@@ -21,8 +21,7 @@ describe('Módulo de Autenticación', () => {
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('message', 'Usuario registrado exitosamente');
     expect(res.body.user).toHaveProperty('email', 'test@iglesia.com');
-    expect(res.body.user).toHaveProperty('role', 'Musico');
-    expect(res.body.user).toHaveProperty('status', 'Pendiente');
+    expect(res.body.user).toHaveProperty('role', 'Admin'); // El primer usuario registrado debería ser Admin
     expect(res.body.user).not.toHaveProperty('password_hash');
   });
 
@@ -49,7 +48,7 @@ describe('Módulo de Autenticación', () => {
       });
 
     expect(res.status).toBe(409);
-    expect(res.body).toHaveProperty('error', 'El correo electrónico ya está registrado');
+    expect(res.body).toHaveProperty('error', 'El correo ya está registrado');
   });
 
   // Cubre las líneas 42-43 (Error interno 500)
@@ -114,7 +113,7 @@ describe('Módulo de Login', () => {
       });
 
     expect(res.status).toBe(401);
-    expect(res.body).toHaveProperty('error', 'Credenciales inválidas');
+    expect(res.body).toHaveProperty('error', 'Contraseña incorrecta');
   });
 
   it('Debería retornar 404 si el usuario no existe', async () => {

@@ -6,34 +6,34 @@ import jwt from 'jsonwebtoken';
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
+  // Validación 400 para que pasen las pruebas
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email y password son requeridos' });
+    return;
+  }
+
   try {
-    // 1. Verificamos si el correo ya existe
     const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (userExists.rows.length > 0) {
       res.status(409).json({ error: 'El correo ya está registrado' });
       return;
     }
 
-    // 2. Encriptamos la contraseña
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // ==========================================
-    // LÓGICA DE CERO CONFIGURACIÓN: PATRÓN PRIMER USUARIO
-    // ==========================================
     const countResult = await pool.query('SELECT COUNT(*) FROM users');
     const isFirstUser = parseInt(countResult.rows[0].count) === 0;
     
-    // CORRECCIÓN: Usamos exactamente los roles del init.sql
     const assignedRole = isFirstUser ? 'Admin' : 'Musico';
+    const initialStatus = 'Aprobado';
 
-    // 3. Insertamos el usuario con el rol calculado
     const insertQuery = `
-      INSERT INTO users (email, password, role) 
-      VALUES ($1, $2, $3) 
+      INSERT INTO users (email, password_hash, role, status) 
+      VALUES ($1, $2, $3, $4) 
       RETURNING id, email, role
     `;
-    const newUser = await pool.query(insertQuery, [email, hashedPassword, assignedRole]);
+    const newUser = await pool.query(insertQuery, [email, hashedPassword, assignedRole, initialStatus]);
 
     res.status(201).json({ 
       message: 'Usuario registrado exitosamente',
@@ -49,6 +49,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email y password son requeridos' });
+    return;
+  }
+
   try {
     const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -58,7 +63,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const user = userResult.rows[0];
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
       res.status(401).json({ error: 'Contraseña incorrecta' });
