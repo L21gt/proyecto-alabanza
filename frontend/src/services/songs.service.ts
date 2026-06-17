@@ -1,16 +1,22 @@
 import type { Song } from '../types';
 
-const API_URL = 'http://localhost:3000/api/songs';
+// Dynamic base URL via Vite environment variables for Docker compatibility
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = `${BASE_URL}/songs`;
 
-export const getSongs = async (): Promise<Song[]> => {
-  // Recuperamos el token que guardamos durante el login
+export const getSongs = async (searchQuery?: string): Promise<Song[]> => {
   const token = localStorage.getItem('token');
+  
+  // URL construction with optional query parameters for filtering
+  const url = searchQuery 
+    ? `${API_URL}?search=${encodeURIComponent(searchQuery)}` 
+    : API_URL;
 
-  const response = await fetch(API_URL, {
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` // Enviamos el token de seguridad
+      'Authorization': `Bearer ${token}`
     }
   });
 
@@ -22,14 +28,13 @@ export const getSongs = async (): Promise<Song[]> => {
   }
 
   const data = await response.json();
-  // Extraemos 'songs' si viene en un objeto, o devolvemos la data directa si es un arreglo, o un arreglo vacío por defecto.
   return data.songs || data || [];
 };
 
 export const getSongById = async (id: string, transposeOffset: number = 0): Promise<Song> => {
   const token = localStorage.getItem('token');
   
-  // Si hay un offset de transposición, lo agregamos a la URL
+  // URL construction with transposition offset parameter
   const url = transposeOffset !== 0 
     ? `${API_URL}/${id}?transpose=${transposeOffset}`
     : `${API_URL}/${id}`;

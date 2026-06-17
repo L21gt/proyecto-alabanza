@@ -13,6 +13,9 @@ const CancionDetalle: React.FC = () => {
   const [error, setError] = useState('');
   const [transposeOffset, setTransposeOffset] = useState(0);
 
+  // RBAC validation: Retrieve current user role from session
+  const userRole = localStorage.getItem('userRole');
+
   useEffect(() => {
     const fetchSong = async () => {
       if (!id) return;
@@ -35,6 +38,7 @@ const CancionDetalle: React.FC = () => {
     setTransposeOffset(prev => prev + amount);
   };
 
+  // Resource deletion handler
   const handleDeleteDirect = async () => {
     if (!id) return;
 
@@ -90,23 +94,26 @@ const CancionDetalle: React.FC = () => {
           Tempo: {song.tempo} BPM
         </span>
 
-        <div className="action-buttons">
-          <button 
-            className="btn-edit" 
-            onClick={() => navigate(`/cancion/${id}/editar`)}
-            disabled={loading}
-          >
-            Editar
-          </button>
+        {/* Conditional rendering for destructive actions (Admin only) */}
+        {userRole === 'Admin' && (
+          <div className="action-buttons">
+            <button 
+              className="btn-edit" 
+              onClick={() => navigate(`/cancion/${id}/editar`)}
+              disabled={loading}
+            >
+              Editar
+            </button>
 
-          <button 
-            className="btn-delete-small" 
-            onClick={handleDeleteDirect}
-            disabled={loading}
-          >
-            Eliminar
-          </button>
-        </div>
+            <button 
+              className="btn-delete-small" 
+              onClick={handleDeleteDirect}
+              disabled={loading}
+            >
+              Eliminar
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="lyric-content">
