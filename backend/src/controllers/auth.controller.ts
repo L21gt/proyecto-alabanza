@@ -4,12 +4,18 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  // Extraemos todos los campos del nuevo payload de onboarding
   const { email, password, name, birth_date, phone, area } = req.body;
 
   // Validación 400 estricta para campos requeridos
   if (!email || !password || !name || !birth_date) {
     res.status(400).json({ error: 'Email, contraseña, nombre y fecha de nacimiento son obligatorios' });
+    return;
+  }
+
+  // Validación de contraseña segura
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&).' });
     return;
   }
 
@@ -26,9 +32,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const countResult = await pool.query('SELECT COUNT(*) FROM users');
     const isFirstUser = parseInt(countResult.rows[0].count) === 0;
     
-    // Arquitectura Zero Trust:
-    // El usuario "Génesis" (primer usuario) nace como Admin y Aprobado.
-    // Todos los usuarios subsecuentes nacen como 'Usuario' estándar y estado 'Pendiente'.
+    // Arquitectura Zero Trust
     const assignedRole = isFirstUser ? 'Admin' : 'Usuario';
     const initialStatus = isFirstUser ? 'Aprobado' : 'Pendiente';
 
@@ -84,9 +88,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // ==========================================
-    // BARRERA DE SEGURIDAD (RBAC & Status Check)
-    // ==========================================
+    // BARRERA DE SEGURIDAD (Status Check)
     if (user.status === 'Pendiente') {
       res.status(403).json({ error: 'Tu cuenta está en revisión. Un administrador debe aprobarla para que puedas ingresar.' });
       return;

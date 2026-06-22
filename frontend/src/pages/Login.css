@@ -69,3 +69,66 @@
   text-align: center;
   border: 1px solid var(--error-color);
 }
+
+/* ========================================== */
+/* DISPOSICIÓN DE COLUMNAS (Registro)         */
+/* ========================================== */
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ========================================== */
+/* INPUT DE TELÉFONO CON PREFIJO FIJO         */
+/* ========================================== */
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 4px;
+  padding: 0 0.75rem;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box; /* Asegura que el padding no sume ancho extra */
+}
+
+/* Efecto focus para todo el contenedor simulando un input real */
+.phone-input-wrapper:focus-within {
+  border-color: var(--accent-color, #3b82f6);
+  outline: 1px solid var(--accent-color, #3b82f6);
+}
+
+.phone-prefix {
+  color: var(--text-secondary, #64748b);
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.phone-input {
+  border: none;
+  background: transparent;
+  padding: 0.75rem 0;
+  flex: 1;
+  color: var(--text-primary, #0f172a);
+  outline: none;
+  font-family: inherit;
+  font-size: 1rem;
+  min-width: 0; /* Vital para que el input respete a su padre */
+}
+
+/* ========================================== */
+/* TEXTO DE AYUDA (Contraseña)                */
+/* ========================================== */
+.password-helper-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 0.4rem;
+  line-height: 1.4;
+}

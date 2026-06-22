@@ -8,6 +8,7 @@ import CancionDetalle from './pages/CancionDetalle';
 import CancionForm from './pages/CancionForm';
 import CancionEdit from './pages/CancionEdit';
 import RepertorioDetalle from './pages/RepertorioDetalle';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -54,6 +55,8 @@ function App() {
             <Route path="/cancion/nueva" element={<CancionForm />} />
             {/* Formulario para editar canción existente */}
             <Route path="/cancion/:id/editar" element={<CancionEdit />} />
+            {/* Panel de administración */}
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </main>
       </div>

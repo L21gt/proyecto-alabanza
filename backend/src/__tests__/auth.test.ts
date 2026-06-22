@@ -28,7 +28,7 @@ describe('Módulo de Autenticación', () => {
       .post('/api/auth/register')
       .send({
         email: 'test@iglesia.com',
-        password: 'password123',
+        password: 'Password123!',
         name: 'Usuario Prueba',
         birth_date: '1990-01-01',
         phone: '12345678',
@@ -50,7 +50,7 @@ describe('Módulo de Autenticación', () => {
       .post('/api/auth/register')
       .send({
         email: 'incompleto@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
         // Faltan name y birth_date intencionalmente
       });
 
@@ -63,7 +63,7 @@ describe('Módulo de Autenticación', () => {
       .post('/api/auth/register')
       .send({
         email: 'test@iglesia.com', // Ya registrado en la primera prueba
-        password: 'nuevapassword',
+        password: 'Password123!',
         name: 'Clon Prueba',
         birth_date: '1995-01-01'
       });
@@ -79,7 +79,7 @@ describe('Módulo de Autenticación', () => {
       .post('/api/auth/register')
       .send({
         email: 'error500@iglesia.com',
-        password: 'password123',
+        password: 'Password123!',
         name: 'Usuario Error',
         birth_date: '2000-01-01'
       });
@@ -97,7 +97,7 @@ describe('Módulo de Autenticación', () => {
 describe('Módulo de Login y Seguridad (Zero Trust)', () => {
   
   beforeAll(async () => {
-    const hash = await bcrypt.hash('password123', 10);
+    const hash = await bcrypt.hash('Password123!', 10);
     
     // Inyectamos 3 perfiles distintos para poner a prueba la aduana de seguridad
     await pool.query(
@@ -124,7 +124,7 @@ describe('Módulo de Login y Seguridad (Zero Trust)', () => {
       .post('/api/auth/login')
       .send({
         email: 'login@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
       });
 
     expect(res.status).toBe(200);
@@ -137,7 +137,7 @@ describe('Módulo de Login y Seguridad (Zero Trust)', () => {
       .post('/api/auth/login')
       .send({
         email: 'pendiente@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
       });
 
     expect(res.status).toBe(403);
@@ -149,7 +149,7 @@ describe('Módulo de Login y Seguridad (Zero Trust)', () => {
       .post('/api/auth/login')
       .send({
         email: 'rechazado@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
       });
 
     expect(res.status).toBe(403);
@@ -173,7 +173,7 @@ describe('Módulo de Login y Seguridad (Zero Trust)', () => {
       .post('/api/auth/login')
       .send({
         email: 'noexiste@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
       });
 
     expect(res.status).toBe(404);
@@ -187,12 +187,29 @@ describe('Módulo de Login y Seguridad (Zero Trust)', () => {
       .post('/api/auth/login')
       .send({
         email: 'login@iglesia.com',
-        password: 'password123'
+        password: 'Password123!'
       });
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('error', 'Error interno del servidor');
 
     querySpy.mockRestore();
+  });
+
+  it('Debería retornar status 400 si la contraseña no cumple los requisitos de seguridad', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'debil@iglesia.com',
+        password: 'clave', // Contraseña débil
+        name: 'Usuario Débil',
+        birth_date: '2000-01-01',
+        phone: '12345678',
+        area: 'Musico'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toContain('La contraseña debe tener al menos 8 caracteres');
   });
 });

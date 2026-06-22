@@ -52,6 +52,9 @@ beforeAll(async () => {
 afterAll(async () => {
   // Limpieza final de los datos de prueba
   await pool.query("DELETE FROM users WHERE email LIKE '%@userstest.com'");
+
+    // Cerramos la conexión a la base de datos para evitar que Jest se quede colgado
+    await pool.end();
 });
 
 describe('Módulo de Usuarios (Dashboard Admin)', () => {
