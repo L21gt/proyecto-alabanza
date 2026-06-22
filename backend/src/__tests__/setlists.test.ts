@@ -211,4 +211,61 @@ describe('Módulo de Repertorios (Setlists)', () => {
       expect(res.body.message).toBe('Repertorio eliminado exitosamente');
     });
   });
+
+  // ==========================================
+// MÓDULO 5: MANEJO DE ERRORES INTERNOS (500)
+// ==========================================
+describe('5. Manejo de Errores Internos en Repertorios', () => {
+  it('Debería retornar 500 al fallar la creación de un repertorio', async () => {
+    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+    const res = await request(app)
+      .post('/api/setlists')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Fallo Interno' });
+    
+    expect(res.status).toBe(500);
+    querySpy.mockRestore();
+  });
+
+  it('Debería retornar 500 al fallar la obtención de un repertorio por ID', async () => {
+    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+    const res = await request(app)
+      .get('/api/setlists/99999')
+      .set('Authorization', `Bearer ${adminToken}`);
+    
+    expect(res.status).toBe(500);
+    querySpy.mockRestore();
+  });
+
+  it('Debería retornar 500 al fallar al agregar una canción a un repertorio', async () => {
+    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+    const res = await request(app)
+      .post('/api/setlists/99999/songs')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ song_id: 1, transposed_key: 'G' });
+    
+    expect(res.status).toBe(500);
+    querySpy.mockRestore();
+  });
+
+  it('Debería retornar 500 al fallar al quitar una canción de un repertorio', async () => {
+    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+    const res = await request(app)
+      .delete('/api/setlists/99999/songs/1')
+      .set('Authorization', `Bearer ${adminToken}`);
+    
+    expect(res.status).toBe(500);
+    querySpy.mockRestore();
+  });
+
+  it('Debería retornar 500 al fallar al eliminar un repertorio completo', async () => {
+    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+    const res = await request(app)
+      .delete('/api/setlists/99999')
+      .set('Authorization', `Bearer ${adminToken}`);
+    
+    expect(res.status).toBe(500);
+    querySpy.mockRestore();
+  });
+});
 });

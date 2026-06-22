@@ -88,6 +88,21 @@ describe('Módulo de Canciones', () => {
       const result = await pool.query('SELECT * FROM song_themes WHERE song_id = $1', [res.body.song.id]);
       expect(result.rows.length).toBe(3); // Debe tener 3 temas enlazados
     });
+
+    it('Debería retornar 500 si la base de datos rechaza una categoría inválida', async () => {
+      const res = await request(app)
+        .post('/api/songs')
+        .set('Authorization', `Bearer ${tokenAdmin}`)
+        .send({
+          title: 'Canción Inválida',
+          author: 'Autor',
+          original_key: 'C',
+          category: 'CategoriaFalsa', // PostgreSQL rechazará esto por su restricción ENUM
+          content: 'Letra'
+        });
+
+      expect(res.status).toBe(500);
+    });
   });
 
   describe('3. Lectura de Canciones (GET)', () => {
@@ -154,6 +169,16 @@ describe('Módulo de Canciones', () => {
       // El contenido debía actualizar G a A manteniendo el texto
       expect(res.body.song.content).toContain('A\nBueno es alabarte oh Señor');
     });
+
+    it('Debería retornar 200 e ignorar la transposición si la clave es inválida', async () => {
+      const res = await request(app)
+        .get(`/api/songs/${testSongId}?transpose=H#`)
+        .set('Authorization', `Bearer ${tokenMusico}`);
+
+      // El transposer es resiliente y simplemente devuelve la canción original sin fallar
+      expect(res.status).toBe(200);
+      expect(res.body.song).toHaveProperty('content');
+    });
   });
 
   describe('4. Actualización y Eliminación (PUT / DELETE)', () => {
@@ -212,6 +237,19 @@ describe('Módulo de Canciones', () => {
         .set('Authorization', `Bearer ${tokenMusico}`);
 
       expect(res.status).toBe(404);
+    });
+
+    it('Debería retornar 400 si intentamos actualizar con campos incompletos', async () => {
+      const res = await request(app)
+        .put(`/api/songs/${updateSongId}`)
+        .set('Authorization', `Bearer ${tokenAdmin}`)
+        .send({
+          title: '', 
+          original_key: 'D'
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
     });
   });
 

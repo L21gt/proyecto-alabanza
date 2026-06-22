@@ -17,6 +17,7 @@ const pool = new Pool({
  * Se omite intencionalmente en el entorno de pruebas (NODE_ENV === 'test')
  * para prevenir 'Open Handles' y llamadas a console.log post-ejecución en Jest.
  */
+/* istanbul ignore next */
 if (process.env.NODE_ENV !== 'test') {
   pool.connect((err, client, release) => {
     if (err) {

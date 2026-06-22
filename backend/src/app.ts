@@ -3,6 +3,8 @@ import cors from 'cors';
 import authRoutes from './routes/auth.routes';
 import songsRoutes from './routes/songs.routes';
 import setlistsRoutes from './routes/setlists.routes';
+import userRoutes from './routes/users.routes';
+
 
 const app: Application = express();
 
@@ -18,4 +20,5 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/setlists', setlistsRoutes);
+app.use('/api/users', userRoutes);
 export default app;
