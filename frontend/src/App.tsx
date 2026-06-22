@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Catalogo from './pages/Catalogo';
+import Repertorios from './pages/Repertorios'; // <-- Nueva importación
 import './index.css';
 import CancionDetalle from './pages/CancionDetalle';
 import CancionForm from './pages/CancionForm';
 import CancionEdit from './pages/CancionEdit';
+import RepertorioDetalle from './pages/RepertorioDetalle';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -39,9 +41,13 @@ function App() {
             {/* Pantalla de Autenticación */}
             <Route path="/login" element={<Login />} />
             
-            {/* Placeholder para el catálogo que haremos después */}
+            {/* Catálogo principal */}
             <Route path="/catalogo" element={<Catalogo />} />
 
+            {/* Gestor de Repertorios */}
+            <Route path="/repertorios" element={<Repertorios />} />
+            {/* Detalle de repertorio con gestión de canciones */}
+            <Route path="/repertorios/:id" element={<RepertorioDetalle />} />
             {/* Detalle de canción con transposición */}
             <Route path="/cancion/:id" element={<CancionDetalle />} />
             {/* Formulario para crear nueva canción */}

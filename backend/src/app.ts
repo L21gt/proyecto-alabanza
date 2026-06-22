@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes';
 import songsRoutes from './routes/songs.routes';
+import setlistsRoutes from './routes/setlists.routes';
 
 const app: Application = express();
 
@@ -16,4 +17,5 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Importar nuestras nuevas rutas de autenticación
 app.use('/api/auth', authRoutes);
 app.use('/api/songs', songsRoutes);
+app.use('/api/setlists', setlistsRoutes);
 export default app;

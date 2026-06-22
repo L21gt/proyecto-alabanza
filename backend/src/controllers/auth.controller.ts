@@ -4,11 +4,12 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+  // Extraemos todos los campos del nuevo payload de onboarding
+  const { email, password, name, birth_date, phone, area } = req.body;
 
-  // Validación 400 para que pasen las pruebas
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email y password son requeridos' });
+  // Validación 400 estricta para campos requeridos
+  if (!email || !password || !name || !birth_date) {
+    res.status(400).json({ error: 'Email, contraseña, nombre y fecha de nacimiento son obligatorios' });
     return;
   }
 
@@ -25,15 +26,28 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const countResult = await pool.query('SELECT COUNT(*) FROM users');
     const isFirstUser = parseInt(countResult.rows[0].count) === 0;
     
-    const assignedRole = isFirstUser ? 'Admin' : 'Musico';
-    const initialStatus = 'Aprobado';
+    // Arquitectura Zero Trust:
+    // El usuario "Génesis" (primer usuario) nace como Admin y Aprobado.
+    // Todos los usuarios subsecuentes nacen como 'Usuario' estándar y estado 'Pendiente'.
+    const assignedRole = isFirstUser ? 'Admin' : 'Usuario';
+    const initialStatus = isFirstUser ? 'Aprobado' : 'Pendiente';
 
     const insertQuery = `
-      INSERT INTO users (email, password_hash, role, status) 
-      VALUES ($1, $2, $3, $4) 
-      RETURNING id, email, role
+      INSERT INTO users (email, password_hash, name, birth_date, phone, area, role, status) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      RETURNING id, email, role, status
     `;
-    const newUser = await pool.query(insertQuery, [email, hashedPassword, assignedRole, initialStatus]);
+    
+    const newUser = await pool.query(insertQuery, [
+      email, 
+      hashedPassword, 
+      name, 
+      birth_date, 
+      phone || null, 
+      area || 'Otro', 
+      assignedRole, 
+      initialStatus
+    ]);
 
     res.status(201).json({ 
       message: 'Usuario registrado exitosamente',
@@ -70,6 +84,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // ==========================================
+    // BARRERA DE SEGURIDAD (RBAC & Status Check)
+    // ==========================================
+    if (user.status === 'Pendiente') {
+      res.status(403).json({ error: 'Tu cuenta está en revisión. Un administrador debe aprobarla para que puedas ingresar.' });
+      return;
+    }
+
+    if (user.status === 'Rechazado') {
+      res.status(403).json({ error: 'Tu acceso a la plataforma ha sido denegado.' });
+      return;
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'super_secreto_desarrollo',
@@ -79,7 +106,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       message: 'Inicio de sesión exitoso',
       token,
-      user: { id: user.id, email: user.email, role: user.role }
+      user: { id: user.id, email: user.email, role: user.role, status: user.status }
     });
 
   } catch (error) {

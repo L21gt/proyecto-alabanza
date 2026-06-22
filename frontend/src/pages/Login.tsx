@@ -20,8 +20,12 @@ const Login: React.FC = () => {
       if (isLogin) {
         // Flujo de Iniciar Sesión
         const response = await loginService(email, password);
-        localStorage.setItem('token', response.token);
+        
+        // Le indicamos a TypeScript que confíe en que aquí viene un string, 
+        // o en el peor de los casos, pase un string vacío para evitar el undefined.
+        localStorage.setItem('token', response.token || '');
         localStorage.setItem('userRole', response.user.role);
+        
         navigate('/catalogo');
       } else {
         // Flujo de Registro

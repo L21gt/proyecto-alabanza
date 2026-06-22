@@ -1,0 +1,134 @@
+.repertorios-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.repertorios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color, #334155);
+  margin-bottom: 2rem;
+}
+
+.repertorios-title {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid var(--text-secondary, #94a3b8);
+  color: var(--text-secondary, #94a3b8);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(148, 163, 184, 0.1);
+  color: var(--text-primary, #f8fafc);
+}
+
+/* Create Form Styles */
+.create-setlist-card {
+  background-color: var(--bg-secondary, #1e293b);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.create-setlist-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.create-setlist-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .create-setlist-form {
+    flex-direction: row;
+  }
+  
+  .form-input {
+    flex: 2;
+  }
+  
+  .date-input {
+    flex: 1;
+  }
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 4px;
+  background-color: var(--bg-primary, #0f172a);
+  color: var(--text-primary, #f8fafc);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-color, #3b82f6);
+}
+
+/* Grid and Cards */
+.setlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.setlist-card {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 8px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+}
+
+.setlist-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-color, #3b82f6);
+}
+
+.setlist-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.setlist-date {
+  margin: 0;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.setlist-card-action {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--accent-color, #3b82f6);
+  font-weight: bold;
+  text-align: right;
+}
+
+.empty-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-secondary, #94a3b8);
+  padding: 3rem;
+}

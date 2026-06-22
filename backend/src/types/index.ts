@@ -21,3 +21,24 @@ export interface Song {
   created_at?: string;
   updated_at?: string;
 }
+
+// Interfaz para las canciones dentro de un repertorio (Join de setlist_songs y songs)
+export interface SetlistSong {
+  song_id: number;
+  transposed_key: string;
+  sort_order: number;
+  title: string;
+  author: string;
+  original_key: string;
+  tempo: number;
+}
+
+// Interfaz principal del Repertorio
+export interface Setlist {
+  id: number;
+  name: string;
+  event_date: string | null;
+  user_id: number;
+  created_at?: string;
+  songs?: SetlistSong[];
+}

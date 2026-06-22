@@ -66,6 +66,14 @@ const Catalogo: React.FC = () => {
         <h2 className="catalogo-title">Repertorio</h2>
         
         <div className="header-controls">
+          {/* Global Navigation - Accesible para todos los roles */}
+          <button 
+            onClick={() => navigate('/repertorios')} 
+            className="btn-secondary"
+          >
+            Gestor de Repertorios
+          </button>
+
           <span className="user-role-label">
             Rol actual: <strong className="user-role-highlight">{userRole}</strong>
           </span>
@@ -90,6 +98,7 @@ const Catalogo: React.FC = () => {
           />
         </div>
 
+        {/* Admin-only specific actions */}
         {userRole === 'Admin' && (
           <div className="admin-actions-container">
             <button className="btn-primary" onClick={() => navigate('/cancion/nueva')}>
