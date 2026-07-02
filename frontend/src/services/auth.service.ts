@@ -11,7 +11,7 @@ export interface RegisterData {
 }
 
 // Utilizamos la variable de entorno de Vite inyectada por Docker, o hacemos fallback a localhost para desarrollo local
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const AUTH_URL = `${BASE_URL}/auth`;
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {

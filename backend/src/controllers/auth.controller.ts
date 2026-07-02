@@ -13,9 +13,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 
   // Validación de contraseña segura
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&+.])[A-Za-z\d@$!%*?&+.]{8,}$/;
   if (!passwordRegex.test(password)) {
-    res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&).' });
+    res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&+.).' });
     return;
   }
 

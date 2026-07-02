@@ -12,28 +12,28 @@ interface AuthRequest extends Request {
 }
 
 export const createSong = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { title, author, original_key, tempo, category, content, themes } = req.body;
+  // 1. Agregamos version y video_link a la desestructuración
+  const { title, author, version, original_key, tempo, category, content, video_link, themes } = req.body;
 
   if (!title || !author || !original_key || !category || !content) {
     res.status(400).json({ error: 'Faltan campos obligatorios' });
     return;
   }
 
-  // 1. FLUJO EDITORIAL: Determinar el estado inicial basado en el rol
   const initialStatus = req.user?.role === 'Admin' ? 'Aprobado' : 'Pendiente';
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 2. Insertar la Canción con su estado
+    // 2. Insertamos los nuevos campos en la tabla
     const insertSongQuery = `
-      INSERT INTO songs (title, author, original_key, tempo, category, content, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO songs (title, author, version, original_key, tempo, category, content, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, title, status
     `;
     const songResult = await client.query(insertSongQuery, [
-      title, author, original_key, tempo, category, content, initialStatus
+      title, author, version || null, original_key, tempo, category, content, video_link || null, initialStatus
     ]);
     const newSong = songResult.rows[0];
 
@@ -158,7 +158,8 @@ export const getSongById = async (req: AuthRequest, res: Response): Promise<void
 
 export const updateSong = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { title, author, original_key, tempo, category, content, themes } = req.body;
+  // 1. Agregamos version y video_link
+  const { title, author, version, original_key, tempo, category, content, video_link, themes } = req.body;
 
   if (!title || !author || !original_key || !category || !content) {
     res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -170,13 +171,16 @@ export const updateSong = async (req: Request, res: Response): Promise<void> => 
   try {
     await client.query('BEGIN');
 
+    // 2. Actualizamos la consulta SQL
     const updateSongQuery = `
       UPDATE songs 
-      SET title = $1, author = $2, original_key = $3, tempo = $4, category = $5, content = $6, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
+      SET title = $1, author = $2, version = $3, original_key = $4, tempo = $5, category = $6, content = $7, video_link = $8, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $9
       RETURNING *
     `;
-    const songResult = await client.query(updateSongQuery, [title, author, original_key, tempo, category, content, id]);
+    const songResult = await client.query(updateSongQuery, [
+      title, author, version || null, original_key, tempo, category, content, video_link || null, id
+    ]);
 
     if (songResult.rows.length === 0) {
       await client.query('ROLLBACK');
