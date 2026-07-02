@@ -66,6 +66,15 @@ const Catalogo: React.FC = () => {
         <h2 className="catalogo-title">Repertorio</h2>
         
         <div className="header-controls">
+          {userRole === 'Admin' && (
+            <button 
+              onClick={() => navigate('/admin')} 
+              className="btn-primary"
+            >
+              Panel Admin
+            </button>
+          )}
+          
           {/* Global Navigation - Accesible para todos los roles */}
           <button 
             onClick={() => navigate('/repertorios')} 

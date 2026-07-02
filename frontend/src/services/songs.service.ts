@@ -110,3 +110,21 @@ export const deleteSong = async (id: string): Promise<void> => {
     throw new Error(data.error || 'Error al eliminar la canción');
   }
 };
+
+export const updateSongStatus = async (id: string | number, status: 'Aprobado' | 'Pendiente'): Promise<void> => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/${id}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ status })
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Error al actualizar el estado de la canción');
+  }
+};

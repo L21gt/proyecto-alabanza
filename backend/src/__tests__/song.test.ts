@@ -42,11 +42,22 @@ describe('Módulo de Canciones', () => {
       expect(res.status).toBe(200);
     });
 
-    it('Debería denegar la creación de canciones si no es Admin (403)', async () => {
+    it('Debería permitir a un Músico proponer una canción en estado Pendiente (201)', async () => {
       const res = await request(app)
         .post('/api/songs')
-        .set('Authorization', `Bearer ${tokenMusico}`);
-      expect(res.status).toBe(403);
+        .set('Authorization', `Bearer ${tokenMusico}`)
+        .send({
+          title: 'Nueva Canción Propuesta',
+          author: 'Músico Local',
+          original_key: 'D',
+          tempo: 90,
+          category: 'Alabanza',
+          content: 'D\nLetra propuesta'
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('message', 'Canción propuesta enviada a revisión');
+      expect(res.body.song).toHaveProperty('status', 'Pendiente');
     });
   });
 
@@ -313,6 +324,47 @@ describe('Módulo de Canciones', () => {
       const res = await request(app).delete('/api/songs/1').set('Authorization', `Bearer ${tokenAdmin}`);
       expect(res.status).toBe(500);
       querySpy.mockRestore();
+    });
+  });
+
+  describe('6. Flujo Editorial (Aprobación de Canciones)', () => {
+    let pendingSongId: number;
+
+    beforeAll(async () => {
+      const result = await pool.query(`
+        INSERT INTO songs (title, author, original_key, tempo, category, content, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id
+      `, ['Cancion Para Revisar', 'Autor', 'C', 100, 'Alabanza', 'C\\nLetra', 'Pendiente']);
+      pendingSongId = result.rows[0].id;
+    });
+
+    it('Debería denegar la aprobación si no es Admin (403)', async () => {
+      const res = await request(app)
+        .patch(`/api/songs/${pendingSongId}/status`)
+        .set('Authorization', `Bearer ${tokenMusico}`)
+        .send({ status: 'Aprobado' });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('Debería retornar 400 si el estado enviado es inválido', async () => {
+      const res = await request(app)
+        .patch(`/api/songs/${pendingSongId}/status`)
+        .set('Authorization', `Bearer ${tokenAdmin}`)
+        .send({ status: 'Invalido' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('Debería permitir al Admin aprobar una canción (200)', async () => {
+      const res = await request(app)
+        .patch(`/api/songs/${pendingSongId}/status`)
+        .set('Authorization', `Bearer ${tokenAdmin}`)
+        .send({ status: 'Aprobado' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.song).toHaveProperty('status', 'Aprobado');
     });
   });
 });

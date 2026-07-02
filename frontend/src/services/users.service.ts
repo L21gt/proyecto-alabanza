@@ -12,6 +12,8 @@ export interface PendingUser {
 
 export const getPendingUsers = async (): Promise<PendingUser[]> => {
   const token = localStorage.getItem('token');
+  
+  // Usando backticks (`) para que inyecte la variable
   const response = await fetch(`${BASE_URL}/users/pending`, {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -25,6 +27,8 @@ export const getPendingUsers = async (): Promise<PendingUser[]> => {
 
 export const updateUserStatus = async (id: number, status: 'Aprobado' | 'Rechazado'): Promise<void> => {
   const token = localStorage.getItem('token');
+  
+  // Usando backticks (`)
   const response = await fetch(`${BASE_URL}/users/${id}/status`, {
     method: 'PATCH',
     headers: {

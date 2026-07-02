@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken, verifyAdmin } from '../middlewares/auth.middleware';
-import { createSong, getAllSongs, getSongById, updateSong, deleteSong } from '../controllers/songs.controller';
+import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus } from '../controllers/songs.controller';
 
 const router = Router();
 
@@ -8,9 +8,14 @@ const router = Router();
 router.get('/', verifyToken, getAllSongs);
 router.get('/:id', verifyToken, getSongById);
 
-// Rutas de Escritura y Eliminación (SOLO Admin)
-router.post('/', verifyToken, verifyAdmin, createSong);
+// Ruta de Creación (TODOS pueden proponer, el controlador decide si nace 'Pendiente' o 'Aprobada')
+router.post('/', verifyToken, createSong);
+
+// Rutas de Edición y Eliminación (SOLO Admin)
 router.put('/:id', verifyToken, verifyAdmin, updateSong);
 router.delete('/:id', verifyToken, verifyAdmin, deleteSong);
+
+// NUEVA RUTA: Aprobar Canción (SOLO Admin)
+router.patch('/:id/status', verifyToken, verifyAdmin, updateSongStatus);
 
 export default router;
