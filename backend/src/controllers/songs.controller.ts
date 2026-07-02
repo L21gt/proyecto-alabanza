@@ -82,32 +82,29 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-export const getAllSongs = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { search } = req.query;
-    
-    let query = 'SELECT id, title, author, original_key, category, status FROM songs WHERE 1=1';
-    const queryParams: any[] = [];
-    let paramCounter = 1;
+export const getAllSongs = async (req: Request, res: Response): Promise<void> => {
+  const { search } = req.query;
 
-    // 1. FLUJO EDITORIAL: Filtro por Rol
-    // Si no es admin, forzamos a que solo vea las canciones aprobadas
-    if (req.user?.role !== 'Admin') {
-      query += ` AND status = 'Aprobado'`;
+  try {
+    let query = 'SELECT * FROM songs';
+    const queryParams: any[] = [];
+    
+    // El catálogo público SIEMPRE mostrará únicamente canciones aprobadas
+    let conditions = [`status = 'Aprobado'`];
+
+    if (search) {
+      queryParams.push(`%${search}%`);
+      conditions.push(`(title ILIKE $${queryParams.length} OR author ILIKE $${queryParams.length})`);
     }
 
-    // 2. Filtro de Búsqueda
-    if (search) {
-      query += ` AND title ILIKE $${paramCounter}`;
-      queryParams.push(`%${search}%`);
-      paramCounter++;
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
     }
 
     query += ' ORDER BY title ASC';
 
     const result = await pool.query(query, queryParams);
     res.status(200).json({ songs: result.rows });
-
   } catch (error) {
     console.error('Error al obtener catálogo de canciones:', error);
     res.status(500).json({ error: 'Error interno al obtener las canciones' });
@@ -172,9 +169,19 @@ export const updateSong = async (req: Request, res: Response): Promise<void> => 
     await client.query('BEGIN');
 
     // 2. Actualizamos la consulta SQL
+    // Forzamos que cualquier edición guardada por el administrador apruebe la canción automáticamente
     const updateSongQuery = `
       UPDATE songs 
-      SET title = $1, author = $2, version = $3, original_key = $4, tempo = $5, category = $6, content = $7, video_link = $8, updated_at = CURRENT_TIMESTAMP
+      SET title = $1, 
+          author = $2, 
+          version = $3, 
+          original_key = $4, 
+          tempo = $5, 
+          category = $6, 
+          content = $7, 
+          video_link = $8, 
+          status = 'Aprobado', 
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = $9
       RETURNING *
     `;

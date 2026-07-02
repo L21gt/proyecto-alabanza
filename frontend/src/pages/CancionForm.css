@@ -1,44 +1,79 @@
-.form-container {
+.form-page-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 1rem 0;
+  padding: 2rem 1rem;
+}
+
+.form-card {
+  background-color: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color, #334155);
+  padding-bottom: 1rem;
+}
+
+.form-header h2 {
+  margin: 0.5rem 0;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+}
+
+.form-header p {
+  margin: 0;
+  color: var(--text-secondary);
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
-@media (min-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.form-textarea {
-  width: 100%;
-  min-height: 400px;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background-color: var(--bg-primary);
+.full-width {
+  grid-column: 1 / -1;
+  margin-bottom: 1.5rem;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+input, select, textarea {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 6px;
+  padding: 0.75rem;
   color: var(--text-primary);
-  /* ESTA ES LA MAGIA DEL FORMATO MUSICAL */
-  font-family: 'Courier New', Courier, monospace; 
-  font-size: 1.1rem;
-  line-height: 1.6;
-  white-space: pre; 
-  overflow-wrap: normal;
-  overflow-x: auto;
-  resize: vertical;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color 0.2s;
 }
 
-.form-textarea:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  border-color: var(--accent-color, #3b82f6);
+}
+
+textarea {
+  min-height: 350px; /* Esto forzará un buen tamaño por defecto */
+  resize: vertical;  /* Permite al usuario estirarlo hacia abajo si necesita más espacio */
+  font-family: 'Courier New', Courier, monospace; /* Crucial para alinear acordes */
+  width: 100%;
 }
 
 .form-actions {
@@ -46,31 +81,51 @@
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #334155);
 }
 
-.form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.btn-danger {
-  background-color: #dc2626;
+.btn-primary {
+  background-color: var(--accent-color, #3b82f6);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
-  transition: opacity 0.2s;
+  transition: background-color 0.2s;
 }
 
-.btn-danger:hover {
-  background-color: #b91c1c;
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
 }
 
-.btn-danger:disabled {
+.btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color, #334155);
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.error-banner {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+  color: #fca5a5;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
 }

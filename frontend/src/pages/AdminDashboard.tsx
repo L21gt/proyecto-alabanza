@@ -168,8 +168,16 @@ const AdminDashboard: React.FC = () => {
                 <td><span className="badge-area">{song.original_key}</span></td>
                 <td>{song.category}</td>
                 <td className="actions-cell">
+                  {/* Cambiamos el botón Aprobar por Revisar */}
+                  <button 
+                    className="btn-approve" 
+                    style={{ backgroundColor: '#3b82f6' }} 
+                    onClick={() => navigate(`/cancion/${song.id}/editar`)}
+                  >
+                    Revisar y Editar
+                  </button>
                   <button className="btn-approve" onClick={() => handleSongApprove(song.id)}>
-                    Aprobar
+                    Aprobar Directo
                   </button>
                   <button className="btn-reject" onClick={() => handleSongReject(song.id)}>
                     Eliminar

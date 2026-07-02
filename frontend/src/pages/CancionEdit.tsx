@@ -28,7 +28,7 @@ const CancionEdit: React.FC = () => {
         setTitle(data.title);
         setAuthor(data.author);
         setOriginalKey(data.original_key);
-        setTempo(data.tempo);
+        setTempo(data.tempo || 120);
         setCategory(data.category);
         setContent(data.content);
         if (data.themes) {
@@ -142,9 +142,10 @@ const CancionEdit: React.FC = () => {
 
         <div className="form-group">
           <label className="form-label">Letra y Acordes</label>
-          <textarea 
+          <textarea
             className="form-textarea" 
             required 
+            rows={15}
             value={content} 
             onChange={e => setContent(e.target.value)}
           />

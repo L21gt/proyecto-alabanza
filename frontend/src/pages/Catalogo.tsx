@@ -83,6 +83,13 @@ const Catalogo: React.FC = () => {
             Gestor de Repertorios
           </button>
 
+          <button 
+            className="btn-primary" 
+            onClick={() => navigate('/cancion/nueva')}
+          >
+            {userRole === 'Admin' ? '+ Agregar Canción' : '+ Sugerir Nueva Canción'}
+          </button>
+
           <span className="user-role-label">
             Rol actual: <strong className="user-role-highlight">{userRole}</strong>
           </span>
@@ -107,14 +114,14 @@ const Catalogo: React.FC = () => {
           />
         </div>
 
-        {/* Admin-only specific actions */}
+        {/* Admin-only specific actions
         {userRole === 'Admin' && (
           <div className="admin-actions-container">
             <button className="btn-primary" onClick={() => navigate('/cancion/nueva')}>
               + Nueva Canción
             </button>
           </div>
-        )}
+        )} */}
       </div>
 
       {loading ? (

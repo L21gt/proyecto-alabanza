@@ -2,11 +2,14 @@ export interface Song {
   id: number;
   title: string;
   author: string;
+  version?: string; // Nuevo (Opcional)
   original_key: string;
-  tempo: number;
+  tempo?: number;   // El '?' soluciona el error, indicando que es opcional
   category: string;
   content: string;
-  themes: string[];
+  themes?: string[]; // (Opcional)
+  video_link?: string; // Nuevo (Opcional)
+  status?: string;   // (Opcional, para el flujo editorial)
   created_at?: string;
   updated_at?: string;
 }
