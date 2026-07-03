@@ -57,17 +57,17 @@ export const createSetlist = async (data: { name: string; event_date?: string })
 };
 
 export const deleteSetlist = async (id: string | number): Promise<void> => {
-  const response = await fetch(`${API_URL}/${id}`, {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/setlists/${id}`, {
     method: 'DELETE',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
+      'Authorization': `Bearer ${token}`
     }
   });
 
   if (!response.ok) {
-    const result = await response.json();
-    throw new Error(result.error || 'Error al eliminar el repertorio');
+    const data = await response.json();
+    throw new Error(data.error || 'Error al eliminar el repertorio');
   }
 };
 

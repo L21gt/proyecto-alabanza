@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createSong } from '../services/songs.service';
 import './CancionForm.css';
 
 const CancionForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Detectamos si la URL incluye un ID de repertorio: /cancion/nueva?repertorioId=5
+  const repertorioId = searchParams.get('repertorioId'); 
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -51,8 +56,17 @@ const CancionForm: React.FC = () => {
         content: formData.content
       };
 
-      await createSong(songPayload);
+      // Guardamos la canción en el backend (quedará 'Pendiente' o 'Aprobada' según el rol)
+      const newSong = await createSong(songPayload);
       
+      // LOGICA DEL REPERTORIO AL VUELO: 
+      if (repertorioId && newSong) {
+        // En el siguiente paso crearemos la función addSongToSetlist, por ahora solo redirigimos
+        alert('Sugerencia guardada. En el próximo paso la enlazaremos automáticamente a tu repertorio.');
+        navigate(`/repertorios/${repertorioId}`);
+        return;
+      }
+
       const role = localStorage.getItem('userRole');
       if (role === 'Admin') {
         alert('Canción publicada exitosamente en el catálogo.');

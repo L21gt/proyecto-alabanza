@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { verifyToken, verifyAdmin } from '../middlewares/auth.middleware';
-import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus } from '../controllers/songs.controller';
+import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus, getPendingSongs } from '../controllers/songs.controller';
 
 const router = Router();
 
 // Rutas de Lectura (Músicos y Admin)
 router.get('/', verifyToken, getAllSongs);
+
+// NUEVA RUTA: Obtener Canciones Pendientes (SOLO Admin)
+router.get('/pending', verifyToken, verifyAdmin, getPendingSongs);
+
+// Ruta de Lectura por ID (Músicos y Admin)
 router.get('/:id', verifyToken, getSongById);
 
 // Ruta de Creación (TODOS pueden proponer, el controlador decide si nace 'Pendiente' o 'Aprobada')

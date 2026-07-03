@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPendingUsers, updateUserStatus } from '../services/users.service';
-import { getSongs, updateSongStatus, deleteSong } from '../services/songs.service';
+import { updateSongStatus, deleteSong, getPendingSongs } from '../services/songs.service';
 import type { PendingUser } from '../services/users.service';
 import type { Song } from '../types';
 import './AdminDashboard.css';
@@ -28,14 +28,12 @@ const AdminDashboard: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Obtenemos los usuarios pendientes
       const usersData = await getPendingUsers();
       setUsers(usersData);
 
-      // Obtenemos las canciones y filtramos solo las pendientes
-      const allSongs = await getSongs();
-      const pendingSongs = allSongs.filter((song: PendingSong) => song.status === 'Pendiente');
-      setSongs(pendingSongs);
+      // CORRECCIÓN: Consultamos directamente el endpoint de pendientes
+      const pendingSongsData = await getPendingSongs();
+      setSongs(pendingSongsData);
 
       setError('');
     } catch (err) {

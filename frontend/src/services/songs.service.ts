@@ -128,3 +128,18 @@ export const updateSongStatus = async (id: string | number, status: 'Aprobado' |
     throw new Error(data.error || 'Error al actualizar el estado de la canción');
   }
 };
+
+export const getPendingSongs = async (): Promise<Song[]> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/songs/pending`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) throw new Error('Error al obtener las canciones pendientes');
+  const data = await response.json();
+  return data.songs || data || [];
+};

@@ -294,3 +294,17 @@ export const updateSongStatus = async (req: AuthRequest, res: Response): Promise
     res.status(500).json({ error: 'Error interno al actualizar el estado' });
   }
 };
+
+export const getPendingSongs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM songs 
+      WHERE status = 'Pendiente' 
+      ORDER BY created_at DESC
+    `);
+    res.status(200).json({ songs: result.rows });
+  } catch (error) {
+    console.error('Error al obtener canciones pendientes:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
