@@ -12,7 +12,6 @@ interface AuthRequest extends Request {
 }
 
 export const createSong = async (req: AuthRequest, res: Response): Promise<void> => {
-  // 1. Agregamos version y video_link a la desestructuración
   const { title, author, version, original_key, tempo, category, content, video_link, themes } = req.body;
 
   if (!title || !author || !original_key || !category || !content) {
@@ -20,13 +19,15 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
+  // AQUÍ ESTÁ LA SEGURIDAD: Definimos el estado según el rol
   const initialStatus = req.user?.role === 'Admin' ? 'Aprobado' : 'Pendiente';
+  
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 2. Insertamos los nuevos campos en la tabla
+    // INSERTAMOS con el 'initialStatus' calculado arriba
     const insertSongQuery = `
       INSERT INTO songs (title, author, version, original_key, tempo, category, content, video_link, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -37,6 +38,7 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
     ]);
     const newSong = songResult.rows[0];
 
+    // MANTENEMOS TU LÓGICA DE TEMAS (ETIQUETAS)
     if (themes && Array.isArray(themes) && themes.length > 0) {
       for (const themeName of themes) {
         const normalizedTheme = themeName.trim().toLowerCase();

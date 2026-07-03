@@ -73,7 +73,8 @@ export const createSong = async (songData: Omit<Song, 'id' | 'created_at' | 'upd
     throw new Error(data.error || 'Error al guardar la canción');
   }
 
-  return data;
+  // CORRECCIÓN: Desenvolvemos el objeto para que TypeScript reciba el 'Song' real
+  return data.song || data;
 };
 
 export const updateSong = async (id: string, songData: Omit<Song, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {

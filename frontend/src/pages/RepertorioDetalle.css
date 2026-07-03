@@ -257,3 +257,22 @@
     margin-top: -2rem;
   }
 }
+
+/* ========================================== */
+/* SUGERENCIA AL VUELO                        */
+/* ========================================== */
+
+.rd-suggest-container {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-color, #334155);
+  border-radius: 8px;
+}
+
+.rd-suggest-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #94a3b8);
+  margin: 0 0 1rem 0;
+}

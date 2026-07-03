@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createSong } from '../services/songs.service';
+import { addSongToSetlist } from '../services/setlists.service';
 import './CancionForm.css';
 
 const CancionForm: React.FC = () => {
@@ -56,17 +57,32 @@ const CancionForm: React.FC = () => {
         content: formData.content
       };
 
-      // Guardamos la canción en el backend (quedará 'Pendiente' o 'Aprobada' según el rol)
-      const newSong = await createSong(songPayload);
+      // Guardamos la canción en el backend
+      const response = await createSong(songPayload);
       
+      // CORRECCIÓN: Como el servicio ya nos devuelve el tipo 'Song' correcto, usamos su ID directo
+      const createdSongId = response.id;
+
       // LOGICA DEL REPERTORIO AL VUELO: 
-      if (repertorioId && newSong) {
-        // En el siguiente paso crearemos la función addSongToSetlist, por ahora solo redirigimos
-        alert('Sugerencia guardada. En el próximo paso la enlazaremos automáticamente a tu repertorio.');
-        navigate(`/repertorios/${repertorioId}`);
-        return;
+      if (repertorioId && createdSongId) {
+        try {
+          // Enlazamos la canción recién creada al repertorio
+          await addSongToSetlist(repertorioId, {
+            song_id: createdSongId,
+            transposed_key: formData.original_key,
+            sort_order: 999 
+          });
+          
+          alert('Canción guardada y agregada exitosamente a tu repertorio.');
+          navigate(`/repertorios/${repertorioId}`);
+          return; // Detenemos la ejecución aquí para que NO vaya al catálogo
+        } catch (linkErr) {
+          console.error("Error al enlazar al repertorio:", linkErr);
+          alert('La canción se sugirió correctamente, pero hubo un error al enlazarla a tu lista.');
+        }
       }
 
+      // Flujo normal (Si el usuario NO venía de un repertorio)
       const role = localStorage.getItem('userRole');
       if (role === 'Admin') {
         alert('Canción publicada exitosamente en el catálogo.');

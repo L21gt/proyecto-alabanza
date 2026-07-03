@@ -23,7 +23,6 @@ const RepertorioDetalle: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   
   // Mapeo para guardar la tonalidad seleccionada de cada canción en los resultados
-  // Estructura: { [songId]: 'D#' }
   const [selectedKeys, setSelectedKeys] = useState<Record<number, string>>({});
 
   // Carga inicial y refresco del Repertorio
@@ -40,7 +39,6 @@ const RepertorioDetalle: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-    // Le indicamos al linter que hacer setState aquí es intencional y seguro (Data Fetching inicial)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSetlistDetails();
   }, [fetchSetlistDetails]);
@@ -65,7 +63,6 @@ const RepertorioDetalle: React.FC = () => {
         const results = await getSongs(debouncedSearchTerm);
         setSearchResults(results);
         
-        // Inicializar el diccionario de tonalidades con la tonalidad original de cada canción
         const initialKeys: Record<number, string> = {};
         results.forEach(song => {
           initialKeys[song.id] = song.original_key;
@@ -84,7 +81,6 @@ const RepertorioDetalle: React.FC = () => {
   const handleAddSong = async (song: Song) => {
     if (!setlist || !id) return;
     
-    // El orden será secuencial al final de la lista actual
     const nextOrder = (setlist.songs?.length || 0) + 1;
     const transposedKey = selectedKeys[song.id] || song.original_key;
 
@@ -94,7 +90,6 @@ const RepertorioDetalle: React.FC = () => {
         transposed_key: transposedKey,
         sort_order: nextOrder
       });
-      // Limpiamos la búsqueda y recargamos el repertorio
       setSearchTerm('');
       setSearchResults([]);
       await fetchSetlistDetails();
@@ -176,6 +171,19 @@ const RepertorioDetalle: React.FC = () => {
             ))}
           </div>
         )}
+
+        {/* NUEVA ZONA: Sugerencia de canciones al vuelo */}
+        <div className="rd-suggest-container">
+          <p className="rd-suggest-text">
+            ¿No encuentras la canción en el catálogo?
+          </p>
+          <button 
+            className="btn-secondary" 
+            onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
+          >
+            + Sugerir y agregar al repertorio
+          </button>
+        </div>
       </section>
 
       <hr className="rd-divider" />
