@@ -2,17 +2,18 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Catalogo from './pages/Catalogo';
-import Repertorios from './pages/Repertorios'; // <-- Nueva importación
-import './index.css';
+import Repertorios from './pages/Repertorios';
 import CancionDetalle from './pages/CancionDetalle';
 import CancionForm from './pages/CancionForm';
 import CancionEdit from './pages/CancionEdit';
 import RepertorioDetalle from './pages/RepertorioDetalle';
 import AdminDashboard from './pages/AdminDashboard';
+import Header from './components/Header'; // <-- Importamos el Header global
+import './index.css';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'; // Dark por defecto es más elegante
   });
 
   useEffect(() => {
@@ -26,36 +27,20 @@ function App() {
 
   return (
     <BrowserRouter>
+      
       <div className="container">
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h1>Biblioteca de Alabanzas</h1>
-          <button className="btn-primary" onClick={toggleTheme}>
-            Modo {theme === 'light' ? 'Oscuro' : 'Claro'}
-          </button>
-        </header>
-        
+      {/* El Header envuelve toda la aplicación, le pasamos la función del tema */}
+      <Header currentTheme={theme} onToggleTheme={toggleTheme} />
         <main>
           <Routes>
-            {/* Ruta base redirige a login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            {/* Pantalla de Autenticación */}
             <Route path="/login" element={<Login />} />
-            
-            {/* Catálogo principal */}
             <Route path="/catalogo" element={<Catalogo />} />
-
-            {/* Gestor de Repertorios */}
             <Route path="/repertorios" element={<Repertorios />} />
-            {/* Detalle de repertorio con gestión de canciones */}
             <Route path="/repertorios/:id" element={<RepertorioDetalle />} />
-            {/* Detalle de canción con transposición */}
             <Route path="/cancion/:id" element={<CancionDetalle />} />
-            {/* Formulario para crear nueva canción */}
             <Route path="/cancion/nueva" element={<CancionForm />} />
-            {/* Formulario para editar canción existente */}
             <Route path="/cancion/:id/editar" element={<CancionEdit />} />
-            {/* Panel de administración */}
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </main>

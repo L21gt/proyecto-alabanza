@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPendingUsers, updateUserStatus } from '../services/users.service';
-import { updateSongStatus, deleteSong, getPendingSongs } from '../services/songs.service';
+import { deleteSong, getPendingSongs } from '../services/songs.service';
 import type { PendingUser } from '../services/users.service';
 import type { Song } from '../types';
 import './AdminDashboard.css';
@@ -59,16 +59,6 @@ const AdminDashboard: React.FC = () => {
 
     try {
       await updateUserStatus(id, status);
-      await fetchData();
-    } catch (err) {
-      if (err instanceof Error) alert(err.message);
-    }
-  };
-
-  const handleSongApprove = async (id: number) => {
-    if (!window.confirm('¿Estás seguro de que deseas aprobar esta canción para todo el catálogo?')) return;
-    try {
-      await updateSongStatus(id, 'Aprobado');
       await fetchData();
     } catch (err) {
       if (err instanceof Error) alert(err.message);
@@ -166,19 +156,17 @@ const AdminDashboard: React.FC = () => {
                 <td><span className="badge-area">{song.original_key}</span></td>
                 <td>{song.category}</td>
                 <td className="actions-cell">
-                  {/* Cambiamos el botón Aprobar por Revisar */}
                   <button 
-                    className="btn-approve" 
-                    style={{ backgroundColor: '#3b82f6' }} 
+                    className="btn-review" 
                     onClick={() => navigate(`/cancion/${song.id}/editar`)}
                   >
                     Revisar y Editar
                   </button>
-                  <button className="btn-approve" onClick={() => handleSongApprove(song.id)}>
-                    Aprobar Directo
-                  </button>
-                  <button className="btn-reject" onClick={() => handleSongReject(song.id)}>
-                    Eliminar
+                  <button 
+                    className="btn-reject" 
+                    onClick={() => handleSongReject(song.id)}
+                  >
+                    Eliminar Propuesta
                   </button>
                 </td>
               </tr>

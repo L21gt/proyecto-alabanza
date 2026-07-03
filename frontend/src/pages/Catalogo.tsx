@@ -63,41 +63,14 @@ const Catalogo: React.FC = () => {
   return (
     <div className="catalogo-container">
       <header className="catalogo-header">
-        <h2 className="catalogo-title">Repertorio</h2>
+        <h2 className="catalogo-title">Catálogo de Canciones</h2>
         
         <div className="header-controls">
-          {userRole === 'Admin' && (
-            <button 
-              onClick={() => navigate('/admin')} 
-              className="btn-primary"
-            >
-              Panel Admin
-            </button>
-          )}
-          
-          {/* Global Navigation - Accesible para todos los roles */}
-          <button 
-            onClick={() => navigate('/repertorios')} 
-            className="btn-secondary"
-          >
-            Gestor de Repertorios
-          </button>
-
           <button 
             className="btn-primary" 
             onClick={() => navigate('/cancion/nueva')}
           >
             {userRole === 'Admin' ? '+ Agregar Canción' : '+ Sugerir Nueva Canción'}
-          </button>
-
-          <span className="user-role-label">
-            Rol actual: <strong className="user-role-highlight">{userRole}</strong>
-          </span>
-          <button 
-            onClick={handleLogout} 
-            className="btn-logout"
-          >
-            Cerrar Sesión
           </button>
         </div>
       </header>

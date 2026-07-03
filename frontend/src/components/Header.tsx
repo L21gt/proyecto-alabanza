@@ -2,13 +2,11 @@ import React from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import './Header.css';
 
-// 1. Definimos la interfaz para que TypeScript sepa qué props esperamos
 interface HeaderProps {
   currentTheme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
-// 2. Le pasamos la interfaz al componente y extraemos las props
 const Header: React.FC<HeaderProps> = ({ currentTheme, onToggleTheme }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,14 +15,12 @@ const Header: React.FC<HeaderProps> = ({ currentTheme, onToggleTheme }) => {
   const userName = localStorage.getItem('userName') || 'Usuario'; 
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userName');
+    localStorage.clear(); // Limpiamos todo de forma segura
     navigate('/login');
   };
 
-  // No mostramos el header en las pantallas de Login o Registro
-  if (location.pathname === '/login' || location.pathname === '/registro' || !role) {
+  // Condición simplificada: Solo lo ocultamos en el Login o la raíz absoluta
+  if (location.pathname === '/login' || location.pathname === '/') {
     return null; 
   }
 

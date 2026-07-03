@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSetlists, createSetlist } from '../services/setlists.service';
+import { getSetlists, createSetlist, deleteSetlist } from '../services/setlists.service';
 import type { Setlist } from '../types';
 import './Repertorios.css';
 
@@ -14,8 +14,8 @@ const Repertorios: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const navigate = useNavigate();
+  const role = localStorage.getItem('userRole');
 
-  // Utilizamos useCallback para estabilizar la función y complacer al linter
   const fetchSetlists = useCallback(async () => {
     try {
       const data = await getSetlists();
@@ -36,7 +36,6 @@ const Repertorios: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Le indicamos al linter que hacer setState aquí es intencional y seguro (Data Fetching)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSetlists();
   }, [fetchSetlists]);
@@ -50,11 +49,24 @@ const Repertorios: React.FC = () => {
       await createSetlist({ name: newName, event_date: newEventDate || undefined });
       setNewName('');
       setNewEventDate('');
-      await fetchSetlists(); // Recargamos la lista
+      await fetchSetlists(); 
     } catch (err) {
       if (err instanceof Error) alert(err.message);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // NUEVA FUNCIÓN: Eliminar Repertorio
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation(); // Evita que al hacer clic en "Eliminar" se abra el detalle del repertorio
+    if (!window.confirm('¿Estás seguro de eliminar este repertorio permanentemente?')) return;
+    
+    try {
+      await deleteSetlist(id);
+      await fetchSetlists();
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
     }
   };
 
@@ -64,12 +76,21 @@ const Repertorios: React.FC = () => {
     <div className="repertorios-container">
       <header className="repertorios-header">
         <h2 className="repertorios-title">Gestor de Repertorios</h2>
-        <button 
-          onClick={() => navigate('/catalogo')} 
-          className="btn-secondary"
-        >
-          Ir al Catálogo
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          {/* BOTÓN AGREGADO PARA SUGERIR CANCIONES */}
+          <button 
+            onClick={() => navigate('/cancion/nueva')} 
+            className="btn-primary"
+          >
+            {role === 'Admin' ? '+ Agregar Canción al Catálogo' : '+ Sugerir Nueva Canción'}
+          </button>
+          <button 
+            onClick={() => navigate('/catalogo')} 
+            className="btn-secondary"
+          >
+            Ir al Catálogo
+          </button>
+        </div>
       </header>
 
       {error && <div className="error-message-container">{error}</div>}
@@ -106,6 +127,7 @@ const Repertorios: React.FC = () => {
               key={setlist.id} 
               className="setlist-card"
               onClick={() => navigate(`/repertorios/${setlist.id}`)}
+              style={{ cursor: 'pointer' }}
             >
               <div className="setlist-card-content">
                 <h3 className="setlist-name">{setlist.name}</h3>
@@ -115,8 +137,16 @@ const Repertorios: React.FC = () => {
                     : 'Sin fecha programada'}
                 </p>
               </div>
-              <div className="setlist-card-action">
+              <div className="setlist-card-action" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Ver canciones &rarr;</span>
+                {/* BOTÓN PARA ELIMINAR */}
+                <button 
+                  className="btn-danger" 
+                  onClick={(e) => handleDelete(e, setlist.id)}
+                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+                >
+                  Eliminar
+                </button>
               </div>
             </div>
           ))
