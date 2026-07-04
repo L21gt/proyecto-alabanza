@@ -71,8 +71,14 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
 
 export const addSongToSetlist = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { song_id, transposed_key, sort_order } = req.body;
+  const { song_id, transposed_key, sort_order, group_name } = req.body; // <-- Agregamos group_name
   const user = (req as any).user as AuthUser;
+
+  // Validación básica para evitar queries nulos
+  if (!song_id) {
+    res.status(400).json({ error: 'El ID de la canción es obligatorio' });
+    return;
+  }
 
   try {
     // RBAC: Verify ownership or Admin privileges
@@ -87,11 +93,20 @@ export const addSongToSetlist = async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    // Insertamos incluyendo la nueva columna
     const query = `
-      INSERT INTO setlist_songs (setlist_id, song_id, transposed_key, sort_order)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO setlist_songs (setlist_id, song_id, transposed_key, sort_order, group_name)
+      VALUES ($1, $2, $3, $4, $5)
     `;
-    await pool.query(query, [id, song_id, transposed_key || null, sort_order || 0]);
+    
+    await pool.query(query, [
+      id, 
+      song_id, 
+      transposed_key || null, 
+      sort_order || 0, 
+      group_name || null // <-- Si no viene, será null
+    ]);
+    
     res.status(201).json({ message: 'Canción agregada al repertorio' });
   } catch (error) {
     console.error('Error al agregar canción:', error);
