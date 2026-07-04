@@ -1,20 +1,3 @@
-.global-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000; /* Obliga al menú a estar por encima de CUALQUIER otra página */
-  width: 100%;
-  box-sizing: border-box;
-  
-  /* Flexbox original */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: var(--bg-secondary, #1e293b);
-  border-bottom: 1px solid var(--border-color, #334155);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
-}
-
 .dashboard-container {
   max-width: 1000px;
   margin: 0 auto;

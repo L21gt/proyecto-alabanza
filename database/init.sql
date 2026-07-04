@@ -72,6 +72,5 @@ CREATE TABLE setlist_songs (
     transposed_key VARCHAR(10),
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    sort_order INTEGER DEFAULT 0,
     group_name VARCHAR(50)
 );
