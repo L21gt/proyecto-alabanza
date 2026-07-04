@@ -88,23 +88,24 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
   const { search } = req.query;
 
   try {
-    let query = 'SELECT * FROM songs';
+    let query = "SELECT * FROM songs WHERE status = 'Aprobado'";
     const queryParams: any[] = [];
-    
-    // El catálogo público SIEMPRE mostrará únicamente canciones aprobadas
-    let conditions = [`status = 'Aprobado'`];
 
     if (search) {
       queryParams.push(`%${search}%`);
-      conditions.push(`(title ILIKE $${queryParams.length} OR author ILIKE $${queryParams.length})`);
-    }
-
-    if (conditions.length > 0) {
-      query += ` WHERE ` + conditions.join(' AND ');
+      // Búsqueda integrada por Título, Autor o Etiquetas Relacionadas
+      query += ` AND (
+        title ILIKE $1 OR 
+        author ILIKE $1 OR 
+        id IN (
+          SELECT song_id FROM song_themes st
+          JOIN themes t ON st.theme_id = t.id
+          WHERE t.name ILIKE $1
+        )
+      )`;
     }
 
     query += ' ORDER BY title ASC';
-
     const result = await pool.query(query, queryParams);
     res.status(200).json({ songs: result.rows });
   } catch (error) {

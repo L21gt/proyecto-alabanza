@@ -70,6 +70,34 @@ const CancionDetalle: React.FC = () => {
       <div className="detalle-header">
         <h1 className="detalle-title">{song.title}</h1>
         <p className="detalle-author">{song.author}</p>
+
+        {/* INICIO NUEVO BLOQUE DE METADATOS */}
+        <div className="detalle-metadata">
+          {song.video_link && (
+            <a 
+              href={song.video_link} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="metadata-video-btn"
+            >
+              ▶ Ver Video de Referencia
+            </a>
+          )}
+          
+          {song.themes && song.themes.length > 0 && (
+            <div className="metadata-themes-wrapper">
+              <span className="metadata-label">Etiquetas:</span>
+              <div className="metadata-tags">
+                {song.themes.map((theme, i) => (
+                  <span key={i} className="metadata-badge">
+                    {theme}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {/* FIN NUEVO BLOQUE DE METADATOS */}
       </div>
 
       <div className="controls-panel">

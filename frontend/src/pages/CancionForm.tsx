@@ -151,8 +151,6 @@ const CancionForm: React.FC = () => {
               <select id="category" name="category" value={formData.category} onChange={handleChange}>
                 <option value="Alabanza">Alabanza (Rápida)</option>
                 <option value="Adoracion">Adoración (Lenta)</option>
-                <option value="Himno">Himno</option>
-                <option value="Especial">Especial</option>
               </select>
             </div>
           </div>

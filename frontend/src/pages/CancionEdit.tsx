@@ -19,6 +19,9 @@ const CancionEdit: React.FC = () => {
   const [category, setCategory] = useState('Alabanza');
   const [themesInput, setThemesInput] = useState('');
   const [content, setContent] = useState('');
+  const [videoLink, setVideoLink] = useState('');
+  const [originalStatus, setOriginalStatus] = useState('');
+
 
   useEffect(() => {
     const loadSongData = async () => {
@@ -31,6 +34,8 @@ const CancionEdit: React.FC = () => {
         setTempo(data.tempo || 120);
         setCategory(data.category);
         setContent(data.content);
+        setVideoLink(data.video_link || '');
+        setOriginalStatus(data.status || '');
         if (data.themes) {
           setThemesInput(data.themes.join(', '));
         }
@@ -61,10 +66,18 @@ const CancionEdit: React.FC = () => {
         tempo,
         category,
         themes: themesArray,
-        content
+        content,
+        video_link: videoLink
       });
 
-      navigate(`/cancion/${id}`);
+      // LÓGICA DE ENRUTAMIENTO INTELIGENTE
+      if (originalStatus === 'Pendiente') {
+        alert('Canción editada y aprobada exitosamente.');
+        navigate('/admin'); // Regresa a limpiar la cola de pendientes
+      } else {
+        alert('Cambios guardados correctamente.');
+        navigate(`/cancion/${id}`); // O navigate('/catalogo') si prefieres ir a la lista
+      }
     } catch (err) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -140,6 +153,17 @@ const CancionEdit: React.FC = () => {
           </div>
         </div>
 
+        <div className="form-group full-width">
+          <label className="form-label">Enlace de Referencia (Video)</label>
+          <input 
+            type="url" 
+            className="form-input" 
+            value={videoLink} 
+            onChange={e => setVideoLink(e.target.value)} 
+            placeholder="Ej. https://youtube.com/watch?v=..."
+          />
+        </div>
+
         <div className="form-group">
           <label className="form-label">Letra y Acordes</label>
           <textarea
@@ -152,7 +176,13 @@ const CancionEdit: React.FC = () => {
         </div>
 
         <div className="form-actions">
-          <button type="button" className="btn-primary" style={{ backgroundColor: 'var(--text-secondary)' }} onClick={() => navigate(`/cancion/${id}`)} disabled={isLoading}>
+          <button 
+            type="button" 
+            className="btn-primary" 
+            style={{ backgroundColor: 'var(--text-secondary)' }} 
+            onClick={() => navigate(-1)} // <-- Navega hacia atrás dinámicamente
+            disabled={isLoading}
+          >
             Cancelar
           </button>
           <button type="submit" className="btn-primary" disabled={isLoading}>

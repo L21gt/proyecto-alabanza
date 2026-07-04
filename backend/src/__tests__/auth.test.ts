@@ -10,7 +10,7 @@ import bcrypt from 'bcrypt';
 beforeAll(async () => {
   // Garantizamos una bóveda 100% limpia antes de empezar CUALQUIER prueba
   await pool.query('TRUNCATE TABLE setlist_songs, setlists, users CASCADE');
-});
+}, 15000); // Timeout extendido para la limpieza inicial
 
 afterAll(async () => {
   // Limpieza profunda al finalizar para no contaminar a song.test.ts o setlists.test.ts

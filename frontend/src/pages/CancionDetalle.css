@@ -184,3 +184,61 @@
 .btn-danger:hover {
   background-color: #dc2626;
 }
+
+/* ========================================== */
+/* METADATOS DE LA CANCIÓN (Video y Etiquetas) */
+/* ========================================== */
+
+.detalle-metadata {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.metadata-video-btn {
+  background-color: transparent;
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid var(--border-color, #334155);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.metadata-video-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #f8fafc);
+  border-color: var(--text-secondary, #94a3b8);
+}
+
+.metadata-themes-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.metadata-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 600;
+}
+
+.metadata-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.metadata-badge {
+  background-color: rgba(59, 130, 246, 0.15); /* Tono azulado suave */
+  color: var(--accent-color, #3b82f6);
+  padding: 0.2rem 0.75rem;
+  border-radius: 9999px; /* Forma de píldora */
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
