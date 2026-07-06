@@ -10,7 +10,7 @@ import './AdminDashboard.css';
 type PendingSong = Song & { status?: string };
 
 const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'canciones'>('usuarios');
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'canciones'>('canciones');
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [songs, setSongs] = useState<PendingSong[]>([]); 
   const [loading, setLoading] = useState(true);

@@ -199,10 +199,17 @@ const RepertorioDetalle: React.FC = () => {
             {setlist.songs.map((song, index) => (
               <div key={`${song.song_id}-${index}`} className="rd-song-row">
                 <div className="rd-song-number">{index + 1}</div>
-                <div className="rd-song-details">
-                  <h4>{song.title}</h4>
+                
+                {/* MODIFICACIÓN: Título cliqueable */}
+                <div 
+                  className="rd-song-details" 
+                  onClick={() => navigate(`/cancion/${song.song_id}?repertorioId=${id}`)}
+                  title="Haz clic para ver acordes y ensayar"
+                >
+                  <h4 className="rd-song-title-link">{song.title}</h4>
                   <p>{song.author}</p>
                 </div>
+                
                 <div className="rd-song-meta">
                   <span className="rd-badge-key" title="Tonalidad a tocar">
                     {song.transposed_key}

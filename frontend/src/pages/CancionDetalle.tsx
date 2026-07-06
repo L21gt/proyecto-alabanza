@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSongById, deleteSong } from '../services/songs.service';
 import type { Song } from '../types';
 import './CancionDetalle.css';
@@ -7,6 +7,9 @@ import './CancionDetalle.css';
 const CancionDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+  const repertorioId = searchParams.get('repertorioId');
   
   const [song, setSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,12 +63,21 @@ const CancionDetalle: React.FC = () => {
 
   return (
     <div className="detalle-container">
-      <button 
-        className="btn-back" 
-        onClick={() => navigate('/catalogo')}
-      >
-        &larr; Volver al catálogo
-      </button>
+      {repertorioId ? (
+        <button 
+          className="btn-back" 
+          onClick={() => navigate(`/repertorios/${repertorioId}`)}
+        >
+          &larr; Volver al repertorio
+        </button>
+      ) : (
+        <button 
+          className="btn-back" 
+          onClick={() => navigate('/catalogo')}
+        >
+          &larr; Volver al catálogo
+        </button>
+      )}
 
       <div className="detalle-header">
         <h1 className="detalle-title">{song.title}</h1>
