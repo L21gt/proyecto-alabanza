@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSetlistById, addSongToSetlist, removeSongFromSetlist } from '../services/setlists.service';
+import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder } from '../services/setlists.service';
 import { getSongs } from '../services/songs.service';
 import type { Setlist, Song } from '../types';
 import './RepertorioDetalle.css';
@@ -24,6 +24,11 @@ const RepertorioDetalle: React.FC = () => {
   
   // Mapeo para guardar la tonalidad seleccionada de cada canción en los resultados
   const [selectedKeys, setSelectedKeys] = useState<Record<number, string>>({});
+
+  // Estados para el Drag & Drop
+  const [dragItemIndex, setDragItemIndex] = useState<number | null>(null);
+  const [dragOverItemIndex, setDragOverItemIndex] = useState<number | null>(null);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   // Carga inicial y refresco del Repertorio
   const fetchSetlistDetails = useCallback(async () => {
@@ -109,6 +114,60 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
+  // ==========================================
+  // LÓGICA DE DRAG AND DROP (HTML5 Nativo)
+  // ==========================================
+  const handleDragStart = (index: number) => {
+    setDragItemIndex(index);
+  };
+
+  const handleDragEnter = (index: number) => {
+    setDragOverItemIndex(index);
+  };
+
+  const handleDragEnd = async () => {
+    // Si no se movió a un lugar válido o se soltó en el mismo lugar, cancelamos
+    if (dragItemIndex === null || dragOverItemIndex === null || dragItemIndex === dragOverItemIndex) {
+      setDragItemIndex(null);
+      setDragOverItemIndex(null);
+      return;
+    }
+
+    if (!setlist || !setlist.songs || !id) return;
+
+    // 1. Reordenamiento visual inmediato (Optimistic UI)
+    const newSongs = [...setlist.songs];
+    const draggedItem = newSongs[dragItemIndex];
+    newSongs.splice(dragItemIndex, 1); // Quitamos el item de su posición original
+    newSongs.splice(dragOverItemIndex, 0, draggedItem); // Lo insertamos en la nueva
+
+    setSetlist({ ...setlist, songs: newSongs });
+    setDragItemIndex(null);
+    setDragOverItemIndex(null);
+    setIsUpdatingOrder(true);
+
+    // 2. Persistencia en la Base de Datos
+    try {
+      // Preparamos el payload exacto que espera el backend
+      // Preparamos el payload exacto que espera el backend
+      // Preparamos el payload exacto que espera el backend
+      const orderPayload = newSongs.map((song, index) => ({
+        song_id: song.song_id,
+        sort_order: index + 1,
+        // TypeScript ya reconoce group_name gracias a la actualización en types/index.ts
+        group_name: song.group_name || null 
+      }));
+
+      await updateSetlistOrder(id, orderPayload);
+    } catch (err) {
+      alert('Error al guardar el nuevo orden en el servidor. Se recargará la lista original.');
+      console.error('Error al actualizar orden:', err);
+      await fetchSetlistDetails(); // Revertimos visualmente si el backend falla
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
+  
   if (loading) return <div className="loading-container">Cargando detalles...</div>;
   if (error) return <div className="error-message-container">{error}</div>;
   if (!setlist) return <div className="error-message-container">Repertorio no encontrado</div>;
@@ -196,11 +255,25 @@ const RepertorioDetalle: React.FC = () => {
           <p className="rd-empty">No hay canciones asignadas a este repertorio todavía.</p>
         ) : (
           <div className="rd-songs-list">
+            {isUpdatingOrder && <p className="rd-helper-text">Guardando nuevo orden...</p>}
+            
             {setlist.songs.map((song, index) => (
-              <div key={`${song.song_id}-${index}`} className="rd-song-row">
+              <div 
+                key={`${song.song_id}-${index}`} 
+                // Añadimos clases dinámicas para CSS
+                className={`rd-song-row ${dragItemIndex === index ? 'dragging' : ''} ${dragOverItemIndex === index ? 'drag-over' : ''}`}
+                // Propiedades HTML5
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragEnter={() => handleDragEnter(index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()} // Necesario para permitir soltar
+              >
+                {/* Ícono indicador de arrastre */}
+                <div className="rd-drag-handle" title="Arrastrar para reordenar">☰</div>
+                
                 <div className="rd-song-number">{index + 1}</div>
                 
-                {/* MODIFICACIÓN: Título cliqueable */}
                 <div 
                   className="rd-song-details" 
                   onClick={() => navigate(`/cancion/${song.song_id}?repertorioId=${id}`)}
@@ -211,15 +284,11 @@ const RepertorioDetalle: React.FC = () => {
                 </div>
                 
                 <div className="rd-song-meta">
-                  <span className="rd-badge-key" title="Tonalidad a tocar">
-                    {song.transposed_key}
-                  </span>
+                  <span className="rd-badge-key" title="Tonalidad a tocar">{song.transposed_key}</span>
                   <span className="rd-tempo">{song.tempo} BPM</span>
                 </div>
                 <div className="rd-song-remove">
-                  <button onClick={() => handleRemoveSong(song.song_id)} title="Quitar del setlist">
-                    &times;
-                  </button>
+                  <button onClick={() => handleRemoveSong(song.song_id)} title="Quitar del setlist">&times;</button>
                 </div>
               </div>
             ))}

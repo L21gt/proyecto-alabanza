@@ -163,3 +163,54 @@ export const deleteSetlist = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
+
+export const reorderSetlistSongs = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { songs } = req.body; // Recibimos un arreglo de { song_id, sort_order, group_name }
+  const user = (req as any).user as AuthUser;
+
+  if (!songs || !Array.isArray(songs)) {
+    res.status(400).json({ error: 'Formato de datos inválido para reordenar' });
+    return;
+  }
+
+  try {
+    // RBAC: Verificamos propiedad o si es Admin
+    const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
+    if (setlistRes.rows.length === 0) {
+      res.status(404).json({ error: 'Repertorio no encontrado' });
+      return;
+    }
+
+    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+      res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
+      return;
+    }
+
+    // Usamos un cliente dedicado para la Transacción Masiva
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      for (const song of songs) {
+        await client.query(
+          `UPDATE setlist_songs 
+           SET sort_order = $1, group_name = $2 
+           WHERE setlist_id = $3 AND song_id = $4`,
+          [song.sort_order, song.group_name || null, id, song.song_id]
+        );
+      }
+
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'Orden de canciones actualizado exitosamente' });
+    } catch (txError) {
+      await client.query('ROLLBACK');
+      throw txError;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error al reordenar el repertorio:', error);
+    res.status(500).json({ error: 'Error interno del servidor al reordenar' });
+  }
+};

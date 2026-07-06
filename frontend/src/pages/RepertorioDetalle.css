@@ -287,3 +287,43 @@
   color: var(--accent-color); 
   text-decoration: underline; 
 }
+
+/* ========================================== */
+/* ESTILOS DE DRAG AND DROP */
+/* ========================================== */
+
+.rd-drag-handle {
+  cursor: grab;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 1.2rem;
+  padding-right: 0.75rem;
+  user-select: none; /* Evita que el texto se seleccione al arrastrar */
+  display: flex;
+  align-items: center;
+}
+
+.rd-drag-handle:active {
+  cursor: grabbing;
+}
+
+.rd-song-row.dragging {
+  opacity: 0.4;
+  background-color: var(--bg-secondary, #1e293b);
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.rd-song-row.drag-over {
+  border-top: 2px solid var(--accent-color, #3b82f6);
+  padding-top: calc(1rem - 2px); /* Compensa el borde para evitar saltos bruscos */
+}
+
+.rd-song-title-link {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.rd-song-title-link:hover {
+  color: var(--accent-color, #3b82f6);
+  text-decoration: underline;
+}

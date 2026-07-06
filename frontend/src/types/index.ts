@@ -19,6 +19,7 @@ export interface SetlistSong {
   song_id: number;
   transposed_key: string;
   sort_order: number;
+  group_name?: string; // <-- NUEVO: Añadido oficialmente al tipo
   title: string;
   author: string;
   original_key: string;

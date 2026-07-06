@@ -101,3 +101,22 @@ export const removeSongFromSetlist = async (setId: string | number, songId: stri
     throw new Error(result.error || 'Error al quitar la canción del repertorio');
   }
 };
+
+export const updateSetlistOrder = async (
+  setId: string | number,
+  songsOrder: { song_id: number; sort_order: number; group_name: string | null }[]
+): Promise<void> => {
+  const response = await fetch(`${API_URL}/${setId}/songs/order`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${getToken()}`
+    },
+    body: JSON.stringify({ songs: songsOrder })
+  });
+
+  if (!response.ok) {
+    const result = await response.json();
+    throw new Error(result.error || 'Error al actualizar el orden del repertorio');
+  }
+};
