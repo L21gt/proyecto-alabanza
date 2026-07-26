@@ -17,8 +17,8 @@ const FLATS_TO_SHARPS: Record<string, string> = {
  * @returns El nuevo acorde transpuesto
  */
 export const transposeChord = (chord: string, semitones: number): string => {
-  // Si el token es un guion separador, lo devolvemos intacto inmediatamente
-  if (chord === '-') return chord;
+  // Si el token es un separador explícito, lo devolvemos intacto
+  if (chord === '-' || chord === '/') return chord;
 
   // Regex: 
   // Grupo 1: Captura la nota raíz de la A a la G, seguida opcionalmente de un # o b
@@ -43,7 +43,6 @@ export const transposeChord = (chord: string, semitones: number): string => {
   if (currentIndex === -1) return chord; // Seguridad adicional
 
   // Aplicamos la aritmética modular para el salto
-  // La fórmula ((x % 12) + 12) % 12 asegura que los números negativos den la vuelta correctamente
   let newIndex = (currentIndex + semitones) % 12;
   if (newIndex < 0) {
     newIndex += 12;
@@ -53,9 +52,12 @@ export const transposeChord = (chord: string, semitones: number): string => {
   return CHROMATIC_SCALE[newIndex] + modifier;
 };
 
-// Regex estricta para identificar si una palabra es exclusivamente un acorde O UN GUION (-)
-// (Ej. acepta "Am", "G/B", "Cmaj7", "-", pero rechaza "A ti")
-const STRICT_CHORD_REGEX = /^([A-G][#b]?(m|maj7|maj|min|sus2|sus4|sus|dim|aug|[0-9])*((\/)[A-G][#b]?)?|-)$/;
+// Patrón base de un acorde individual (permite paréntesis para notaciones como C(add9))
+const CHORD_PATTERN = '[A-G][#b]?(?:m|maj7|maj|min|sus2|sus4|sus|dim|aug|add|[0-9]|\\(|\\))*';
+
+// Regex estricta para identificar líneas completas de acordes. 
+// Valida acordes simples, secuencias compuestas (D/F#, C-Am, G/B-C) o guiones solitarios
+const STRICT_CHORD_REGEX = new RegExp(`^(${CHORD_PATTERN})([\\/\\-]${CHORD_PATTERN})*$|^-$`);
 
 /**
  * Transpone el bloque completo de texto de una canción.
@@ -71,23 +73,21 @@ export const transposeSongContent = (content: string, semitones: number): string
     const words = line.trim().split(/\s+/);
     if (words.length === 0 || words[0] === '') return line;
 
-    // Si TODAS las palabras de la línea parecen acordes o guiones, confirmamos que es una línea de acordes
+    // Si TODAS las palabras coinciden con la estructura de acordes, procedemos
     const isChordLine = words.every(word => STRICT_CHORD_REGEX.test(word));
 
     if (isChordLine) {
-      // Separamos conservando los espacios originales / tabs para no arruinar la alineación sobre la letra
+      // Separamos conservando los espacios originales para no arruinar la alineación sobre la letra
       const tokens = line.split(/(\s+)/);
       
       return tokens.map(token => {
         if (token.trim() === '') return token;
         
-        // Manejo de bajos invertidos (ej. D/F#)
-        if (token.includes('/')) {
-          const [chordRoot, bass] = token.split('/');
-          return `${transposeChord(chordRoot, semitones)}/${transposeChord(bass, semitones)}`;
-        }
+        // Dividimos el token internamente conservando los símbolos / y - como elementos del arreglo
+        const subTokens = token.split(/([/\-])/);
         
-        return transposeChord(token, semitones);
+        // Transponemos cada fragmento musical y volvemos a unir con los separadores intactos
+        return subTokens.map(sub => transposeChord(sub, semitones)).join('');
       }).join('');
     }
 

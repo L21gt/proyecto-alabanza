@@ -63,7 +63,7 @@ describe('Motor de Transposición (Cifrado Americano)', () => {
     });
   });
 
-  describe('Procesamiento de Texto Multilínea', () => {
+  describe('Procesamiento de Texto Multilínea y Acordes Combinados', () => {
     it('Debería transponer solo las líneas de acordes y mantener la letra intacta', () => {
       const original = "G\nBueno es alabarte oh Señor";
       const expected = "A\nBueno es alabarte oh Señor";
@@ -71,11 +71,25 @@ describe('Motor de Transposición (Cifrado Americano)', () => {
       expect(transposeSongContent(original, 2)).toBe(expected);
     });
 
-    it('Debería manejar múltiples acordes en una línea y bajos invertidos', () => {
+    it('Debería manejar múltiples acordes en una línea y bajos invertidos (/)', () => {
       const original = "G        D/F#     Em\nTu fidelidad es grande";
       const expected = "F        C/E     Dm\nTu fidelidad es grande";
       // Bajar 2 semitonos
       expect(transposeSongContent(original, -2)).toBe(expected);
+    });
+
+    it('Debería manejar acordes ligados con guiones (-)', () => {
+      const original = "C-Am  F-G\nLetra de prueba";
+      const expected = "D-Bm  G-A\nLetra de prueba";
+      // Subir 2 semitonos
+      expect(transposeSongContent(original, 2)).toBe(expected);
+    });
+
+    it('Debería manejar combinaciones complejas consecutivas (Bajos y ligados juntos)', () => {
+      const original = "G/B-C  D/F#-G\nPre-coro";
+      const expected = "A/C#-D  E/G#-A\nPre-coro";
+      // Subir 2 semitonos
+      expect(transposeSongContent(original, 2)).toBe(expected);
     });
 
     it('Debería devolver el texto intacto si los semitonos son 0', () => {
