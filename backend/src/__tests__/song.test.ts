@@ -138,6 +138,7 @@ describe('Módulo de Canciones', () => {
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.songs)).toBe(true);
       expect(res.body.songs.length).toBeGreaterThan(0);
+      expect(res.body.pagination).toBeDefined();
     });
 
     it('Debería filtrar canciones por parámetro de búsqueda (200)', async () => {

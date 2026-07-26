@@ -85,29 +85,74 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
 };
 
 export const getAllSongs = async (req: Request, res: Response): Promise<void> => {
-  const { search } = req.query;
+  // Extraemos parámetros de paginación y filtros
+  const { search, category, author, original_key, page = '1', limit = '12' } = req.query;
 
   try {
     let query = "SELECT * FROM songs WHERE status = 'Aprobado'";
     const queryParams: any[] = [];
+    let paramCount = 1;
 
+    // Filtro de Búsqueda General (Título, Autor o Etiquetas)
     if (search) {
       queryParams.push(`%${search}%`);
-      // Búsqueda integrada por Título, Autor o Etiquetas Relacionadas
       query += ` AND (
-        title ILIKE $1 OR 
-        author ILIKE $1 OR 
+        title ILIKE $${paramCount} OR 
+        author ILIKE $${paramCount} OR 
         id IN (
           SELECT song_id FROM song_themes st
           JOIN themes t ON st.theme_id = t.id
-          WHERE t.name ILIKE $1
+          WHERE t.name ILIKE $${paramCount}
         )
       )`;
+      paramCount++;
     }
 
+    // Filtros Específicos
+    if (category) {
+      queryParams.push(category);
+      query += ` AND category = $${paramCount}`;
+      paramCount++;
+    }
+
+    if (author) {
+      queryParams.push(`%${author}%`);
+      query += ` AND author ILIKE $${paramCount}`;
+      paramCount++;
+    }
+
+    if (original_key) {
+      queryParams.push(original_key);
+      query += ` AND original_key = $${paramCount}`;
+      paramCount++;
+    }
+
+    // 1. Calculamos el total de resultados para la Paginación
+    const countQuery = `SELECT COUNT(*) FROM (${query}) AS filtered_songs`;
+    const countResult = await pool.query(countQuery, queryParams);
+    const totalItems = parseInt(countResult.rows[0].count, 10);
+
+    // 2. Aplicamos ordenamiento, LIMIT y OFFSET
     query += ' ORDER BY title ASC';
+    
+    const parsedPage = parseInt(page as string, 10) || 1;
+    const parsedLimit = parseInt(limit as string, 10) || 12;
+    const offset = (parsedPage - 1) * parsedLimit;
+    
+    queryParams.push(parsedLimit, offset);
+    query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+
     const result = await pool.query(query, queryParams);
-    res.status(200).json({ songs: result.rows });
+    
+    res.status(200).json({ 
+      songs: result.rows,
+      pagination: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / parsedLimit),
+        currentPage: parsedPage,
+        pageSize: parsedLimit
+      }
+    });
   } catch (error) {
     console.error('Error al obtener catálogo de canciones:', error);
     res.status(500).json({ error: 'Error interno al obtener las canciones' });

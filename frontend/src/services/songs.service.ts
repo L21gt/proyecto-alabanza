@@ -4,13 +4,40 @@ import type { Song } from '../types';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const API_URL = `${BASE_URL}/songs`;
 
-export const getSongs = async (searchQuery?: string): Promise<Song[]> => {
+export interface SongFilters {
+  search?: string;
+  category?: string;
+  author?: string;
+  original_key?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationData {
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+// Actualizamos la firma para aceptar el objeto de filtros o un string (retro-compatibilidad)
+export const getSongs = async (filters: SongFilters | string = {}): Promise<{songs: Song[], pagination: PaginationData}> => {
   const token = localStorage.getItem('token');
   
-  // URL construction with optional query parameters for filtering
-  const url = searchQuery 
-    ? `${API_URL}?search=${encodeURIComponent(searchQuery)}` 
-    : API_URL;
+  const queryParams = new URLSearchParams();
+  
+  if (typeof filters === 'string') {
+    if (filters) queryParams.append('search', filters);
+  } else {
+    if (filters.search) queryParams.append('search', filters.search);
+    if (filters.category) queryParams.append('category', filters.category);
+    if (filters.author) queryParams.append('author', filters.author);
+    if (filters.original_key) queryParams.append('original_key', filters.original_key);
+    if (filters.page) queryParams.append('page', filters.page.toString());
+    if (filters.limit) queryParams.append('limit', filters.limit.toString());
+  }
+
+  const url = queryParams.toString() ? `${API_URL}?${queryParams.toString()}` : API_URL;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -21,14 +48,16 @@ export const getSongs = async (searchQuery?: string): Promise<Song[]> => {
   });
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      throw new Error('Sesión expirada o sin permisos');
-    }
+    if (response.status === 401 || response.status === 403) throw new Error('Sesión expirada o sin permisos');
     throw new Error('Error al obtener el catálogo');
   }
 
   const data = await response.json();
-  return data.songs || data || [];
+  // El backend ahora devuelve { songs: [...], pagination: {...} }
+  return { 
+    songs: data.songs || [], 
+    pagination: data.pagination || null 
+  };
 };
 
 export const getSongById = async (id: string, transposeOffset: number = 0): Promise<Song> => {
