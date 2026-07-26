@@ -49,6 +49,11 @@ beforeAll(async () => {
   pendingUserId2 = p2.rows[0].id;
 });
 
+afterEach(() => {
+    // Restaura TODOS los mocks después de cada prueba
+    jest.restoreAllMocks(); 
+  });
+
 afterAll(async () => {
   // Limpieza final de los datos de prueba
   await pool.query("DELETE FROM users WHERE email LIKE '%@userstest.com'");
@@ -86,7 +91,7 @@ describe('Módulo de Usuarios (Dashboard Admin)', () => {
         .set('Authorization', `Bearer ${adminToken}`);
       
       expect(res.status).toBe(500);
-      querySpy.mockRestore();
+      // querySpy.mockRestore();
     });
   });
 
@@ -147,7 +152,7 @@ describe('Módulo de Usuarios (Dashboard Admin)', () => {
         .send({ status: 'Aprobado' });
       
       expect(res.status).toBe(500);
-      querySpy.mockRestore();
+      // querySpy.mockRestore();
     });
   });
 

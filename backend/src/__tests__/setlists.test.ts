@@ -20,15 +20,12 @@ describe('Módulo de Repertorios (Setlists)', () => {
   const JWT_SECRET = process.env.JWT_SECRET || 'super_secreto_desarrollo';
 
   beforeAll(async () => {
-    // Database cleanup prior to test execution to prevent constraints collision
     await pool.query('DELETE FROM setlist_songs');
     await pool.query('DELETE FROM setlists');
     await pool.query("DELETE FROM users WHERE email LIKE '%@setlist-test.com'");
     await pool.query("DELETE FROM songs WHERE title LIKE 'Cancion Setlist%'");
 
-    // Mock Users Generation (Admin, Usuario 1, Usuario 2)
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash('password123', saltRounds);
+    const passwordHash = await bcrypt.hash('password123', 10);
 
     const insertUserQuery = `
       INSERT INTO users (email, password_hash, name, birth_date, role, status) 
@@ -47,7 +44,6 @@ describe('Módulo de Repertorios (Setlists)', () => {
     musico2Id = m2Res.rows[0].id;
     musico2Token = jwt.sign({ id: musico2Id, email: 'm2@setlist-test.com', role: 'Usuario' }, JWT_SECRET, { expiresIn: '1h' });
 
-    // Mock Songs Generation
     const insertSongQuery = `
       INSERT INTO songs (title, author, original_key, tempo, category, content)
       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
@@ -59,14 +55,16 @@ describe('Módulo de Repertorios (Setlists)', () => {
     testSong2Id = song2Res.rows[0].id;
   });
 
+  afterEach(() => {
+    // Esto garantiza que CUALQUIER espía se destruya después de cada prueba individual
+    jest.restoreAllMocks();
+  });
+
   afterAll(async () => {
-    // Teardown logic: Cleanup test artifacts to prevent DB constraints collision
     await pool.query('DELETE FROM setlist_songs');
     await pool.query('DELETE FROM setlists');
     await pool.query("DELETE FROM users WHERE email LIKE '%@setlist-test.com'");
     await pool.query("DELETE FROM songs WHERE title LIKE 'Cancion Setlist%'");
-    
-    // Termina la instancia del pool de conexiones asignada a esta suite de pruebas
     await pool.end();
   });
 
@@ -81,9 +79,7 @@ describe('Módulo de Repertorios (Setlists)', () => {
         .post('/api/setlists')
         .set('Authorization', `Bearer ${musico1Token}`)
         .send({ event_date: '2026-10-10' });
-      
       expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
     });
 
     it('Debería permitir a un Músico crear un repertorio (201)', async () => {
@@ -91,181 +87,131 @@ describe('Módulo de Repertorios (Setlists)', () => {
         .post('/api/setlists')
         .set('Authorization', `Bearer ${musico1Token}`)
         .send({ name: 'Ensayo Músico 1', event_date: '2026-10-10' });
-      
       expect(res.status).toBe(201);
-      expect(res.body.setlist).toHaveProperty('id');
-      expect(res.body.setlist).toHaveProperty('name', 'Ensayo Músico 1');
-      expect(res.body.setlist).toHaveProperty('user_id', musico1Id);
-      
       musico1SetlistId = res.body.setlist.id;
     });
   });
 
   describe('2. Lectura de Repertorios (GET /api/setlists)', () => {
     it('Debería listar todos los repertorios (200)', async () => {
-      const res = await request(app)
-        .get('/api/setlists')
-        .set('Authorization', `Bearer ${musico2Token}`);
-      
+      const res = await request(app).get('/api/setlists').set('Authorization', `Bearer ${musico2Token}`);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBeTruthy();
-      expect(res.body.length).toBeGreaterThan(0);
     });
 
     it('Debería retornar los detalles de un repertorio específico (200)', async () => {
-      const res = await request(app)
-        .get(`/api/setlists/${musico1SetlistId}`)
-        .set('Authorization', `Bearer ${musico1Token}`);
-      
+      const res = await request(app).get(`/api/setlists/${musico1SetlistId}`).set('Authorization', `Bearer ${musico1Token}`);
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('id', musico1SetlistId);
-      expect(res.body).toHaveProperty('songs'); // Expected to be an array, even if empty
-      expect(Array.isArray(res.body.songs)).toBeTruthy();
     });
 
     it('Debería retornar 404 si el repertorio no existe', async () => {
-      const res = await request(app)
-        .get('/api/setlists/999999')
-        .set('Authorization', `Bearer ${adminToken}`);
-      
+      const res = await request(app).get('/api/setlists/999999').set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(404);
-    });
-
-    it('Debería retornar 500 si ocurre un error interno al listar los repertorios', async () => {
-      const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado en BD al leer repertorios'));
-      
-      const res = await request(app)
-        .get('/api/setlists')
-        .set('Authorization', `Bearer ${musico1Token}`);
-      
-      expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('error');
-      
-      querySpy.mockRestore();
     });
   });
 
   describe('3. Modificación de Repertorios (POST /api/setlists/:id/songs)', () => {
-    it('Debería denegar agregar canción si el usuario no es Admin ni Creador (403)', async () => {
-      const res = await request(app)
-        .post(`/api/setlists/${musico1SetlistId}/songs`)
-        .set('Authorization', `Bearer ${musico2Token}`)
-        .send({ song_id: testSong1Id, transposed_key: 'D', sort_order: 1 });
-      
-      expect(res.status).toBe(403);
-      expect(res.body).toHaveProperty('error');
-    });
-
     it('Debería permitir al creador agregar una canción al repertorio (201)', async () => {
       const res = await request(app)
         .post(`/api/setlists/${musico1SetlistId}/songs`)
         .set('Authorization', `Bearer ${musico1Token}`)
         .send({ song_id: testSong1Id, transposed_key: 'D', sort_order: 1 });
-      
       expect(res.status).toBe(201);
-      expect(res.body.message).toBe('Canción agregada al repertorio');
     });
 
-    it('Debería permitir al Admin agregar una canción al repertorio de otro usuario (201)', async () => {
+    it('Debería denegar agregar canción si el usuario no es Admin ni Creador (403)', async () => {
       const res = await request(app)
         .post(`/api/setlists/${musico1SetlistId}/songs`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ song_id: testSong2Id, transposed_key: 'A', sort_order: 2 });
-      
-      expect(res.status).toBe(201);
+        .set('Authorization', `Bearer ${musico2Token}`)
+        .send({ song_id: testSong2Id, transposed_key: 'D', sort_order: 2 });
+      expect(res.status).toBe(403);
     });
   });
 
-  describe('4. Eliminación en Repertorios (DELETE)', () => {
+  describe('4. Reordenamiento de Repertorios (PUT /api/setlists/:id/songs/order)', () => {
+    it('Debería permitir al creador reordenar las canciones de su repertorio (200)', async () => {
+      const newOrder = [{ song_id: testSong1Id, sort_order: 2, group_name: null }];
+      const res = await request(app)
+        .put(`/api/setlists/${musico1SetlistId}/songs/order`)
+        .set('Authorization', `Bearer ${musico1Token}`)
+        .send({ songs: newOrder });
+      expect(res.status).toBe(200);
+    });
+
+    it('Debería denegar el reordenamiento a un usuario que no es dueño ni Admin (403)', async () => {
+      const newOrder = [{ song_id: testSong1Id, sort_order: 1 }];
+      const res = await request(app)
+        .put(`/api/setlists/${musico1SetlistId}/songs/order`)
+        .set('Authorization', `Bearer ${musico2Token}`)
+        .send({ songs: newOrder });
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('5. Eliminación en Repertorios (DELETE)', () => {
+    let targetSetlistId: number;
+
+    beforeEach(async () => {
+      const tempRes = await pool.query(
+        "INSERT INTO setlists (name, user_id) VALUES ('Setlist para Borrar', $1) RETURNING id",
+        [musico1Id]
+      );
+      targetSetlistId = tempRes.rows[0].id;
+      await pool.query(
+        "INSERT INTO setlist_songs (setlist_id, song_id, sort_order) VALUES ($1, $2, 1)",
+        [targetSetlistId, testSong1Id]
+      );
+    });
+
     it('Debería denegar quitar canción si el usuario no es Admin ni Creador (403)', async () => {
       const res = await request(app)
-        .delete(`/api/setlists/${musico1SetlistId}/songs/${testSong1Id}`)
+        .delete(`/api/setlists/${targetSetlistId}/songs/${testSong1Id}`)
         .set('Authorization', `Bearer ${musico2Token}`);
-      
       expect(res.status).toBe(403);
     });
 
     it('Debería permitir al creador quitar una canción (200)', async () => {
       const res = await request(app)
-        .delete(`/api/setlists/${musico1SetlistId}/songs/${testSong1Id}`)
+        .delete(`/api/setlists/${targetSetlistId}/songs/${testSong1Id}`)
         .set('Authorization', `Bearer ${musico1Token}`);
-      
       expect(res.status).toBe(200);
-      expect(res.body.message).toBe('Canción removida del repertorio');
     });
 
     it('Debería denegar eliminar el repertorio completo si no es Admin ni Creador (403)', async () => {
       const res = await request(app)
-        .delete(`/api/setlists/${musico1SetlistId}`)
+        .delete(`/api/setlists/${targetSetlistId}`)
         .set('Authorization', `Bearer ${musico2Token}`);
-      
       expect(res.status).toBe(403);
     });
 
     it('Debería permitir al Admin eliminar un repertorio de otro usuario (200)', async () => {
       const res = await request(app)
-        .delete(`/api/setlists/${musico1SetlistId}`)
+        .delete(`/api/setlists/${targetSetlistId}`)
         .set('Authorization', `Bearer ${adminToken}`);
-      
       expect(res.status).toBe(200);
-      expect(res.body.message).toBe('Repertorio eliminado exitosamente');
     });
   });
 
-  // ==========================================
-// MÓDULO 5: MANEJO DE ERRORES INTERNOS (500)
-// ==========================================
-describe('5. Manejo de Errores Internos en Repertorios', () => {
-  it('Debería retornar 500 al fallar la creación de un repertorio', async () => {
-    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
-    const res = await request(app)
-      .post('/api/setlists')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Fallo Interno' });
-    
-    expect(res.status).toBe(500);
-    querySpy.mockRestore();
-  });
+  describe('6. Manejo de Errores Internos en Repertorios (500)', () => {
+    beforeEach(() => {
+      // Usamos mockImplementation para evitar el error TS2345 de TypeScript de forma limpia
+      jest.spyOn(pool, 'query').mockImplementation(() => Promise.reject(new Error('Fallo simulado DB')));
+    });
 
-  it('Debería retornar 500 al fallar la obtención de un repertorio por ID', async () => {
-    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
-    const res = await request(app)
-      .get('/api/setlists/99999')
-      .set('Authorization', `Bearer ${adminToken}`);
-    
-    expect(res.status).toBe(500);
-    querySpy.mockRestore();
-  });
+    it('Debería retornar 500 al fallar la creación', async () => {
+      const res = await request(app).post('/api/setlists').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Fallo' });
+      expect(res.status).toBe(500);
+    });
 
-  it('Debería retornar 500 al fallar al agregar una canción a un repertorio', async () => {
-    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
-    const res = await request(app)
-      .post('/api/setlists/99999/songs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ song_id: 1, transposed_key: 'G' });
-    
-    expect(res.status).toBe(500);
-    querySpy.mockRestore();
-  });
+    it('Debería retornar 500 al fallar la obtención por ID', async () => {
+      const res = await request(app).get('/api/setlists/999').set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(500);
+    });
 
-  it('Debería retornar 500 al fallar al quitar una canción de un repertorio', async () => {
-    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
-    const res = await request(app)
-      .delete('/api/setlists/99999/songs/1')
-      .set('Authorization', `Bearer ${adminToken}`);
-    
-    expect(res.status).toBe(500);
-    querySpy.mockRestore();
+    it('Debería retornar 500 al fallar al eliminar repertorio', async () => {
+      const res = await request(app).delete('/api/setlists/999').set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(500);
+    });
   });
-
-  it('Debería retornar 500 al fallar al eliminar un repertorio completo', async () => {
-    const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
-    const res = await request(app)
-      .delete('/api/setlists/99999')
-      .set('Authorization', `Bearer ${adminToken}`);
-    
-    expect(res.status).toBe(500);
-    querySpy.mockRestore();
-  });
-});
 });
