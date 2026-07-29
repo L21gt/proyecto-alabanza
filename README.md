@@ -1,24 +1,23 @@
 # 🎵 Biblioteca de Alabanzas
 
-Una plataforma web integral para la gestión de catálogos musicales, acordes, transposiciones y planificación de repertorios (setlists) para equipos de alabanza y músicos.
+Una plataforma web integral para la gestión de catálogos musicales, acordes, transposiciones complejas y planificación de repertorios (setlists) para equipos de alabanza y músicos profesionales.
 
 ## 🚀 Características Principales
 
-- **Arquitectura de Seguridad Zero Trust:** Autenticación mediante JWT, contraseñas fuertemente encriptadas y protección estricta de rutas basada en roles (`Admin` y `Musico`).
-- **Flujo Editorial Integrado:** Los músicos pueden sugerir nuevas canciones. Estas se mantienen en estado "Pendiente" y no son públicas hasta que un Administrador las revisa, edita y aprueba.
-- **Gestor de Repertorios (Setlists):** Creación de listas de canciones para ensayos o eventos específicos. Permite la integración de canciones existentes o la sugerencia de nuevas "al vuelo".
-- **Transposición Dinámica:** Motor interno que permite cambiar la tonalidad original de las canciones automáticamente (Subir/Bajar semitonos).
-- **Panel de Administración:** Interfaz dedicada para aprobar nuevos usuarios solicitantes y moderar el catálogo musical.
-- **Diseño UI/UX Moderno:** Tema Oscuro/Claro global, alertas integradas, diseño completamente responsivo y separación absoluta de estilos (Cero CSS en línea).
+- **Gestor de Repertorios Avanzado:** Creación de listas de canciones para ensayos o eventos. Soporta ordenamiento intuitivo mediante **Drag & Drop** (HTML5 nativo), edición dinámica de tonalidades y sugerencia de canciones "al vuelo".
+- **Transposición Dinámica Inteligente:** Motor interno de cifrado americano que permite subir o bajar semitonos al instante. Es capaz de procesar notaciones musicales complejas como bajos invertidos (`D/F#`) y acordes ligados (`C-Am`).
+- **Catálogo Optimizado:** Implementación de paginación y panel de filtrado avanzado (búsqueda con _debounce_, categorías y tonalidades) para manejar grandes volúmenes de datos sin comprometer la memoria del navegador.
+- **Flujo Editorial Integrado:** Sistema de moderación donde los músicos pueden sugerir canciones (estado "Pendiente") y los Administradores revisan, editan y aprueban el catálogo para el público general.
+- **Arquitectura de Seguridad Robusta:** Autenticación JWT, contraseñas encriptadas (bcrypt), mitigación de ataques DoS con Rate Limiting, protección contra fuerza bruta y cabeceras seguras configuradas con Helmet.
+- **Diseño UI/UX Moderno:** Tema Oscuro/Claro global, notificaciones condicionales, diseño completamente responsivo y estricta separación de estilos (Cero CSS en línea).
 
 ## 🛠️ Stack Tecnológico
 
-El proyecto está dividido en un entorno de trabajo moderno (Monorepo lógico):
+El proyecto está diseñado bajo una arquitectura de monorepo lógico:
 
 **Frontend:**
 
-- React 18
-- Vite (Bundler ultra rápido)
+- React 18 & Vite (Bundler ultra rápido)
 - TypeScript (Tipado estricto)
 - React Router DOM v6
 - CSS3 puro (Variables nativas)
@@ -27,68 +26,74 @@ El proyecto está dividido en un entorno de trabajo moderno (Monorepo lógico):
 
 - Node.js con Express
 - TypeScript
-- PostgreSQL (Motor de Base de Datos)
-- `pg` (Driver nativo)
-- JSON Web Tokens (JWT) & bcrypt
+- PostgreSQL (Motor de Base de Datos relacional)
+- JWT & bcrypt (Autenticación)
+- Helmet & Express Rate Limit (Seguridad perimetral)
+
+**Infraestructura & Testing:**
+
+- Docker & Docker Compose
+- Jest & Supertest (Pruebas unitarias y de integración)
 
 ## ⚙️ Requisitos Previos
 
-- [Node.js](https://nodejs.org/) (v18 o superior recomendado)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Para correr el contenedor de PostgreSQL)
-- Git
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Recomendado para la ejecución "cero configuraciones")
+- [Node.js](https://nodejs.org/) v18+ y Git (Si se desea correr el entorno manual)
 
-## 📦 Instalación y Configuración Local
+## 📦 Ejecución "Cero Configuraciones" (Recomendado)
 
-**1. Clonar el repositorio:**
-\`\`\`bash
+El proyecto está completamente dockerizado. Puedes levantar la base de datos, el backend y el frontend simultáneamente con un solo comando.
+
+**1. Clonar el repositorio e inyectar variables:**
+
+```bash
 git clone <tu-url-del-repositorio>
 cd proyecto-alabanza
-\`\`\`
+cp .env.example .env
+```
 
-**2. Levantar la Base de Datos:**
-Asegúrate de que Docker esté abierto y ejecuta:
-\`\`\`bash
-docker compose up -d
-\`\`\`
+**2. Levantar los contenedores:**
 
-**3. Configurar el Backend:**
-\`\`\`bash
+```bash
+docker-compose up --build
+```
+
+¡Listo! La interfaz estará disponible en http://localhost:5173 y la API en http://localhost:3000/api.
+
+## 💻 Ejecución para Desarrollo Local (Manual)
+
+Si prefieres correr los servidores localmente para tener recarga en caliente directa (Hot Reload) fuera de contenedores:
+
+**1. Base de Datos (Docker):**
+
+```bash
+docker-compose up -d db
+```
+
+**2. Servidor Backend (Terminal 1):**
+
+```bash
 cd backend
 npm install
-\`\`\`
-_Crea un archivo `.env` en la carpeta `backend` basado en el `.env.example` con tus credenciales de base de datos y tu `JWT_SECRET`._
-
-**4. Configurar el Frontend:**
-\`\`\`bash
-cd ../frontend
-npm install
-\`\`\`
-_Crea un archivo `.env` en la carpeta `frontend` si necesitas apuntar a una URL de API específica (ej. `VITE_API_URL=http://localhost:3000/api`)._
-
-## 🚀 Modo de Uso (Desarrollo)
-
-Para una experiencia libre de conflictos de puertos, asegúrate de mantener Docker encendido **solo** para la base de datos, y levanta los servidores en tu terminal local.
-
-**Terminal 1 (Backend):**
-\`\`\`bash
-cd backend
 npm run dev
-\`\`\`
-_(El servidor iniciará en `http://localhost:3000`)_
+```
 
-**Terminal 2 (Frontend):**
-\`\`\`bash
+**3. Interfaz Frontend (Terminal 2):**
+
+```bash
 cd frontend
+npm install
 npm run dev
-\`\`\`
-_(Vite iniciará en `http://localhost:5173` o `5174`)_
+```
 
-## 🛡️ Estándares de Código
+## 🛡️ Estándares y Buenas Prácticas Aplicadas
 
-- No se utilizan tipos `any`. Las interfaces TypeScript dictan la estructura de datos (`types/index.ts`).
-- Cero estilos en línea (`style={{...}}`). Cada componente React está ligado a su respectivo archivo `.css`.
-- Uso exhaustivo de Linters (ESLint) para prevenir "código muerto" y variables sin uso.
+- **Tipado Estricto:** Prohibido el uso de la variante any. Las interfaces TypeScript dictan la estructura de datos y promesas en todo el sistema.
 
----
+- **Clean Code & UI:** Cero estilos en línea (style={{...}}). Cada componente React cuenta con su respectivo archivo .css modular.
 
-_Desarrollado con arquitectura escalable y pensado para despliegue Serverless a cero costo._
+- **Calidad de Código:** Uso exhaustivo de ESLint para prevención de renderizados en cascada, revisión exhaustiva del array de dependencias en Hooks y limpieza de código muerto.
+
+- **Cobertura de Pruebas:** Suite de testing que audita controladores, validaciones RBAC, y el algoritmo matemático del motor de transposición musical.
+
+Desarrollado con arquitectura escalable, preparado para despliegue continuo (CI/CD) y orientado a la nube.
