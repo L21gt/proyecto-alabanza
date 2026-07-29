@@ -7,6 +7,6 @@ describe('App Health Check', () => {
     
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('status', 'ok');
-    expect(response.body).toHaveProperty('message', 'API funcionando correctamente');
+    expect(response.body).toHaveProperty('message', 'API funcionando y protegida correctamente');
   });
 });
