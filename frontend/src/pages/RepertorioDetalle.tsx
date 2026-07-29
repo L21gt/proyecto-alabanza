@@ -65,11 +65,13 @@ const RepertorioDetalle: React.FC = () => {
       }
       setIsSearching(true);
       try {
-        const results = await getSongs(debouncedSearchTerm);
+        const data = await getSongs(debouncedSearchTerm);
+        const results = data.songs || []; 
+        
         setSearchResults(results);
         
         const initialKeys: Record<number, string> = {};
-        results.forEach(song => {
+        results.forEach((song: Song) => {
           initialKeys[song.id] = song.original_key;
         });
         setSelectedKeys(prev => ({ ...prev, ...initialKeys }));
@@ -114,9 +116,6 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
-  // ==========================================
-  // LÓGICA DE DRAG AND DROP (HTML5 Nativo)
-  // ==========================================
   const handleDragStart = (index: number) => {
     setDragItemIndex(index);
   };
@@ -126,7 +125,6 @@ const RepertorioDetalle: React.FC = () => {
   };
 
   const handleDragEnd = async () => {
-    // Si no se movió a un lugar válido o se soltó en el mismo lugar, cancelamos
     if (dragItemIndex === null || dragOverItemIndex === null || dragItemIndex === dragOverItemIndex) {
       setDragItemIndex(null);
       setDragOverItemIndex(null);
@@ -135,26 +133,20 @@ const RepertorioDetalle: React.FC = () => {
 
     if (!setlist || !setlist.songs || !id) return;
 
-    // 1. Reordenamiento visual inmediato (Optimistic UI)
     const newSongs = [...setlist.songs];
     const draggedItem = newSongs[dragItemIndex];
-    newSongs.splice(dragItemIndex, 1); // Quitamos el item de su posición original
-    newSongs.splice(dragOverItemIndex, 0, draggedItem); // Lo insertamos en la nueva
+    newSongs.splice(dragItemIndex, 1);
+    newSongs.splice(dragOverItemIndex, 0, draggedItem);
 
     setSetlist({ ...setlist, songs: newSongs });
     setDragItemIndex(null);
     setDragOverItemIndex(null);
     setIsUpdatingOrder(true);
 
-    // 2. Persistencia en la Base de Datos
     try {
-      // Preparamos el payload exacto que espera el backend
-      // Preparamos el payload exacto que espera el backend
-      // Preparamos el payload exacto que espera el backend
       const orderPayload = newSongs.map((song, index) => ({
         song_id: song.song_id,
         sort_order: index + 1,
-        // TypeScript ya reconoce group_name gracias a la actualización en types/index.ts
         group_name: song.group_name || null 
       }));
 
@@ -162,7 +154,7 @@ const RepertorioDetalle: React.FC = () => {
     } catch (err) {
       alert('Error al guardar el nuevo orden en el servidor. Se recargará la lista original.');
       console.error('Error al actualizar orden:', err);
-      await fetchSetlistDetails(); // Revertimos visualmente si el backend falla
+      await fetchSetlistDetails();
     } finally {
       setIsUpdatingOrder(false);
     }
@@ -188,7 +180,6 @@ const RepertorioDetalle: React.FC = () => {
         </div>
       </header>
 
-      {/* ZONA SUPERIOR: Buscador Fijo */}
       <section className="rd-search-section">
         <h3>Agregar Canciones</h3>
         <input
@@ -231,7 +222,6 @@ const RepertorioDetalle: React.FC = () => {
           </div>
         )}
 
-        {/* NUEVA ZONA: Sugerencia de canciones al vuelo */}
         <div className="rd-suggest-container">
           <p className="rd-suggest-text">
             ¿No encuentras la canción en el catálogo?
@@ -247,7 +237,6 @@ const RepertorioDetalle: React.FC = () => {
 
       <hr className="rd-divider" />
 
-      {/* ZONA INFERIOR: El Repertorio Armado */}
       <section className="rd-list-section">
         <h3>Lista del Servicio ({setlist.songs?.length || 0})</h3>
         
@@ -260,26 +249,31 @@ const RepertorioDetalle: React.FC = () => {
             {setlist.songs.map((song, index) => (
               <div 
                 key={`${song.song_id}-${index}`} 
-                // Añadimos clases dinámicas para CSS
-                className={`rd-song-row ${dragItemIndex === index ? 'dragging' : ''} ${dragOverItemIndex === index ? 'drag-over' : ''}`}
-                // Propiedades HTML5
+                className={`rd-song-row ${dragItemIndex === index ? 'dragging' : ''} ${dragOverItemIndex === index ? 'drag-over' : ''} ${song.status === 'Pendiente' ? 'song-pending' : ''}`}
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragEnter={() => handleDragEnter(index)}
                 onDragEnd={handleDragEnd}
-                onDragOver={(e) => e.preventDefault()} // Necesario para permitir soltar
+                onDragOver={(e) => e.preventDefault()}
               >
-                {/* Ícono indicador de arrastre */}
                 <div className="rd-drag-handle" title="Arrastrar para reordenar">☰</div>
                 
                 <div className="rd-song-number">{index + 1}</div>
                 
                 <div 
                   className="rd-song-details" 
-                  onClick={() => navigate(`/cancion/${song.song_id}?repertorioId=${id}`)}
-                  title="Haz clic para ver acordes y ensayar"
+                  onClick={() => {
+                    if (song.status === 'Pendiente') {
+                      alert('Esta canción se encuentra en revisión editorial y aún no tiene los acordes disponibles para ensayar.');
+                    } else {
+                      navigate(`/cancion/${song.song_id}?repertorioId=${id}`);
+                    }
+                  }}
+                  title={song.status === 'Pendiente' ? 'Canción en revisión' : 'Haz clic para ver acordes y ensayar'}
                 >
-                  <h4 className="rd-song-title-link">{song.title}</h4>
+                  <h4 className="rd-song-title-link">
+                    {song.title} {song.status === 'Pendiente' && <span style={{ color: '#eab308', fontSize: '0.8rem', marginLeft: '8px' }}>(En revisión)</span>}
+                  </h4>
                   <p>{song.author}</p>
                 </div>
                 

@@ -52,7 +52,7 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
 
     // Join query to retrieve songs data along with their specific setlist attributes
     const songsRes = await pool.query(`
-      SELECT ss.song_id, ss.transposed_key, ss.sort_order, s.title, s.author, s.original_key, s.tempo 
+      SELECT ss.song_id, ss.transposed_key, ss.sort_order, s.title, s.author, s.original_key, s.tempo, s.status 
       FROM setlist_songs ss
       JOIN songs s ON ss.song_id = s.id
       WHERE ss.setlist_id = $1
