@@ -64,6 +64,12 @@ input, select, textarea {
   transition: border-color 0.2s;
 }
 
+/* Corrección de visibilidad para las opciones del menú desplegable en modo oscuro */
+select option {
+  background-color: var(--bg-secondary, #1e293b);
+  color: var(--text-primary, #f8fafc);
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent-color, #3b82f6);
