@@ -16,7 +16,7 @@ app.use(helmet());
 // 2. Configuración Estricta de CORS: Lista blanca de orígenes permitidos
 const allowedOrigins = [
   'http://localhost:5173', // Frontend local (Vite)
-  // 'https://midominio.com' <-- Aquí agregaremos el dominio de producción en la Fase 2
+  'https://proyecto-alabanza.vercel.app', // Dominio de producción
 ];
 
 app.use(cors({
