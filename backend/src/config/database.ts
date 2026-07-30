@@ -1,16 +1,26 @@
-import { Pool } from 'pg';
+import { Pool, PoolConfig } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Configuración híbrida: Soporta URL completa (Producción/Cloud) o variables individuales (Local/Docker)
+const poolConfig: PoolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false // Requerido por Supabase y plataformas Cloud para conexiones SSL
+      }
+    }
+  : {
+      host: process.env.POSTGRES_HOST || 'localhost',
+      user: process.env.POSTGRES_USER || 'admin',
+      password: process.env.POSTGRES_PASSWORD || 'password',
+      database: process.env.POSTGRES_DB || 'proyecto_alabanza',
+      port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    };
+
 // Inicializamos el Pool de conexiones a PostgreSQL
-const pool = new Pool({
-  host: process.env.POSTGRES_HOST || 'localhost',
-  user: process.env.POSTGRES_USER || 'admin',
-  password: process.env.POSTGRES_PASSWORD || 'password',
-  database: process.env.POSTGRES_DB || 'proyecto_alabanza',
-  port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-});
+const pool = new Pool(poolConfig);
 
 /**
  * Health check de la base de datos en tiempo de inicialización.
