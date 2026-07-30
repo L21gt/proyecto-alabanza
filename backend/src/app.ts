@@ -10,6 +10,9 @@ import userRoutes from './routes/users.routes';
 
 const app: Application = express();
 
+// Confiar en la primera capa del proxy (Necesario para Render/Heroku/Vercel y para express-rate-limit)
+app.set('trust proxy', 1);
+
 // 1. Hardening de Cabeceras HTTP: Oculta tecnologías usadas (ej. X-Powered-By) y previene inyecciones XSS
 app.use(helmet());
 
