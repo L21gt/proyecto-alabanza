@@ -1,4 +1,4 @@
-name: Validacion Estricta - Backend
+name: CI/CD - Validacion Estricta y Despliegue Seguro
 
 on:
   push:
@@ -7,10 +7,14 @@ on:
     branches: ["main"]
 
 jobs:
+  # =========================================================================
+  # JOB 1: ADUANA DE PRUEBAS Y COBERTURA (Se ejecuta siempre primero)
+  # =========================================================================
   test-backend:
+    name: 🧪 Pruebas y Cobertura (Backend)
     runs-on: ubuntu-latest
 
-    # 1. Levantamos una base de datos PostgreSQL efímera para las pruebas
+    # 1. Levantamos la base de datos PostgreSQL efímera para las pruebas
     services:
       postgres:
         image: postgres:15-alpine
@@ -26,7 +30,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    # 2. Le indicamos a GitHub que ejecute los comandos dentro de la carpeta backend
     defaults:
       run:
         working-directory: ./backend
@@ -46,7 +49,6 @@ jobs:
       - name: 🗄️ Estructurar Base de Datos de Prueba
         env:
           PGPASSWORD: adminpassword
-        # Usamos el usuario 'admin' y la BD 'alabanza_db_test' que ya creó Docker
         run: |
           sudo apt-get install -y postgresql-client
           psql -h localhost -U admin -d alabanza_db_test -f ${{ github.workspace }}/database/init.sql
@@ -57,3 +59,27 @@ jobs:
           JWT_SECRET: super_secreto_alabanza_2026_desarrollo
           NODE_ENV: test
         run: npm run test:coverage
+
+  # =========================================================================
+  # JOB 2: DESPLIEGUE CONTROLADO (Solo corre si JOB 1 pasa en verde al 100%)
+  # =========================================================================
+  deploy-production:
+    name: 🚀 Desplegar a Producción (Render & Vercel)
+    needs: test-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 🌐 Disparar Despliegue en Render (Backend)
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl -X POST "$RENDER_HOOK"
+          echo "Despliegue del backend enviado a Render correctamente."
+
+      - name: 🌐 Disparar Despliegue en Vercel (Frontend)
+        env:
+          VERCEL_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          curl -X POST "$VERCEL_HOOK"
+          echo "Despliegue del frontend enviado a Vercel correctamente."
