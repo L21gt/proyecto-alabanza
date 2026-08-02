@@ -10,14 +10,14 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
-    # Levantamos una base de datos PostgreSQL efímera para las pruebas
+    # 1. Levantamos una base de datos PostgreSQL efímera para las pruebas
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: adminpassword
+          POSTGRES_DB: alabanza_db_test
         ports:
           - 5432:5432
         options: >-
@@ -26,7 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    # Le indicamos a GitHub que ejecute los comandos dentro de la carpeta backend
+    # 2. Le indicamos a GitHub que ejecute los comandos dentro de la carpeta backend
     defaults:
       run:
         working-directory: ./backend
@@ -45,20 +45,15 @@ jobs:
 
       - name: 🗄️ Estructurar Base de Datos de Prueba
         env:
-          PGPASSWORD: test_password
-        # Instalamos el cliente, creamos la BD con el sufijo _test y luego inyectamos init.sql ahí
+          PGPASSWORD: adminpassword
+        # Usamos el usuario 'admin' y la BD 'alabanza_db_test' que ya creó Docker
         run: |
           sudo apt-get install -y postgresql-client
-          psql -h localhost -U test_user -d postgres -c "CREATE DATABASE test_db_test;"
-          psql -h localhost -U test_user -d test_db_test -f ${{ github.workspace }}/database/init.sql
+          psql -h localhost -U admin -d alabanza_db_test -f ${{ github.workspace }}/database/init.sql
 
       - name: 🧪 Ejecutar Pruebas y Validar Cobertura (>80%)
         env:
-          # Inyectamos variables de entorno seguras para la prueba en la nube
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: test_db
-          JWT_SECRET: super_secreto_ci_cd
+          DATABASE_URL: postgresql://admin:adminpassword@localhost:5432/alabanza_db_test
+          JWT_SECRET: super_secreto_alabanza_2026_desarrollo
+          NODE_ENV: test
         run: npm run test:coverage
