@@ -39,6 +39,7 @@ const Login: React.FC = () => {
         const response = await loginService(email, password);
         localStorage.setItem('token', response.token || '');
         localStorage.setItem('userRole', response.user.role);
+        localStorage.setItem('userName', response.user.name || 'Usuario');
         navigate('/catalogo');
       } else {
         // Pasamos todo el objeto de perfil al servicio
@@ -187,7 +188,7 @@ const Login: React.FC = () => {
             {/* Texto de ayuda dinámico solo para registro, usando clase CSS */}
             {!isLogin && (
               <p className="password-helper-text">
-                Debe tener al menos 8 caracteres, incluyendo una mayúscula, un número y un carácter especial (@$!%*?&).
+                Debe tener al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un número y uno de los siguientes caracteres especiales permitidos: <strong>@ $ ! % * ? & + .</strong>
               </p>
             )}
           </div>

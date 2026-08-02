@@ -39,7 +39,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const insertQuery = `
       INSERT INTO users (email, password_hash, name, birth_date, phone, area, role, status) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-      RETURNING id, email, role, status
+      RETURNING id, email, name, role, status
     `;
     
     const newUser = await pool.query(insertQuery, [
@@ -108,7 +108,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       message: 'Inicio de sesión exitoso',
       token,
-      user: { id: user.id, email: user.email, role: user.role, status: user.status }
+      user: { id: user.id, email: user.email, role: user.role, status: user.status, name: user.name }
     });
 
   } catch (error) {

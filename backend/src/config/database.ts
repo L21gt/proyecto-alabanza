@@ -1,15 +1,30 @@
 import { Pool, PoolConfig } from 'pg';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// 1. Elegimos el archivo .env correcto según el entorno de Node
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
 
-// Configuración híbrida: Soporta URL completa (Producción/Cloud) o variables individuales (Local/Docker)
+// 2. Cargamos las variables con override: true para garantizar que .env.test tenga prioridad en Jest
+dotenv.config({
+  path: envFile,
+  override: true,
+});
+
+// Detectamos de forma automática si la URL apunta al entorno local (localhost o 127.0.0.1)
+const isLocal =
+  process.env.DATABASE_URL?.includes('localhost') ||
+  process.env.DATABASE_URL?.includes('127.0.0.1');
+
+/* istanbul ignore next */
 const poolConfig: PoolConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false // Requerido por Supabase y plataformas Cloud para conexiones SSL
-      }
+      // En local desactivamos SSL, en la nube lo activamos automáticamente
+      ssl: isLocal
+        ? false
+        : {
+            rejectUnauthorized: false,
+          },
     }
   : {
       host: process.env.POSTGRES_HOST || 'localhost',

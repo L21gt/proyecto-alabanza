@@ -123,12 +123,57 @@
   min-width: 0; /* Vital para que el input respete a su padre */
 }
 
-/* ========================================== */
-/* TEXTO DE AYUDA (Contraseña)                */
-/* ========================================== */
+/* ==========================================
+   GUÍA DE TEXTO PARA CONTRASEÑA EN REGISTRO
+   ========================================== */
 .password-helper-text {
-  font-size: 0.75rem;
-  color: var(--text-secondary, #64748b);
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
   margin-top: 0.4rem;
   line-height: 1.4;
+}
+
+.password-helper-text strong {
+  color: var(--text-primary, #f8fafc);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* ==========================================
+   DISEÑO RESPONSIVO DEL HEADER (MÓVILES)
+   ========================================== */
+@media (max-width: 768px) {
+  .global-header {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .header-brand {
+    width: 100%;
+    text-align: center;
+  }
+
+  .header-nav {
+    width: 100%;
+    justify-content: center;
+    gap: 1.5rem;
+    border-top: 1px solid var(--border-color, #334155);
+    border-bottom: 1px solid var(--border-color, #334155);
+    padding: 0.5rem 0;
+  }
+
+  .header-user-info {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .user-greeting {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.25rem;
+  }
 }
