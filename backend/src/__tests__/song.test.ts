@@ -8,22 +8,35 @@ describe('Módulo de Canciones', () => {
   const tokenMusico = jwt.sign({ id: 1, role: 'Musico', status: 'Aprobado' }, secret);
   const tokenAdmin = jwt.sign({ id: 2, role: 'Admin', status: 'Aprobado' }, secret);
 
-  // Setup: Preparamos la base de datos con algunos temas
+  // Setup: Preparamos la base de datos creando los usuarios de prueba y los temas
   beforeAll(async () => {
-    // Limpiamos por si quedaron datos de pruebas previas
+    // 1. Limpiamos las tablas hijas primero para no violar restricciones de Foreign Key
+    await pool.query('DELETE FROM song_audit_logs');
     await pool.query('DELETE FROM song_themes');
     await pool.query('DELETE FROM themes');
     await pool.query('DELETE FROM songs');
+    await pool.query('DELETE FROM users WHERE id IN (1, 2)');
 
-    // Insertamos los temas SIN forzar el ID y en minúsculas, 
-    // dejando que PostgreSQL avance su contador automático (SERIAL)
+    // 2. INSERTAMOS USUARIOS CON LAS COLUMNAS EXACTAS DE init.sql (password_hash, birth_date, user_role)
+    await pool.query(`
+      INSERT INTO users (id, name, email, password_hash, birth_date, role, status)
+      VALUES 
+        (1, 'Músico Test', 'musico@test.com', 'hashpass', '1995-01-01', 'Usuario', 'Aprobado'),
+        (2, 'Admin Test', 'admin@test.com', 'hashpass', '1990-01-01', 'Admin', 'Aprobado')
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    // 3. Insertamos los temas de prueba
     await pool.query(`INSERT INTO themes (name) VALUES ('adoracion'), ('fe')`);
   });
 
   afterAll(async () => {
+    // Limpiamos los datos generados durante la ejecución de las pruebas
+    await pool.query('DELETE FROM song_audit_logs');
     await pool.query('DELETE FROM song_themes');
     await pool.query('DELETE FROM themes');
     await pool.query('DELETE FROM songs');
+    await pool.query('DELETE FROM users WHERE id IN (1, 2)');
     
     // Cerramos la conexión al terminar para evitar procesos "colgados" (memory leaks)
     await pool.end();
@@ -86,12 +99,12 @@ describe('Módulo de Canciones', () => {
           tempo: 72,
           category: 'Adoracion',
           content: 'G\nCuan grande es El',
-          themes: ['Adoracion', 'Fe', 'Nuevo Tema'] // IDs de los temas que creamos en el beforeAll
+          themes: ['Adoracion', 'Fe', 'Nuevo Tema']
         });
 
       // Validamos la respuesta HTTP
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('message', 'Canción creada exitosamente');
+      expect(res.body).toHaveProperty('message', 'Canción creada y publicada exitosamente');
       expect(res.body.song).toHaveProperty('id');
       expect(res.body.song).toHaveProperty('title', 'Cuan Grande Es El');
 
@@ -122,10 +135,10 @@ describe('Módulo de Canciones', () => {
     // Preparamos una canción específica para asegurar que las búsquedas funcionen
     beforeAll(async () => {
       const result = await pool.query(`
-        INSERT INTO songs (title, author, original_key, tempo, category, content)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO songs (title, author, original_key, tempo, category, content, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id
-      `, ['Bueno es Alabarte', 'Danilo Montero', 'G', 120, 'Alabanza', 'G\\nBueno es alabarte oh Señor']);
+      `, ['Bueno es Alabarte', 'Danilo Montero', 'G', 120, 'Alabanza', 'G\\nBueno es alabarte oh Señor', 1]);
       
       testSongId = result.rows[0].id;
     });
@@ -176,9 +189,7 @@ describe('Módulo de Canciones', () => {
         .set('Authorization', `Bearer ${tokenMusico}`);
 
       expect(res.status).toBe(200);
-      // La tonalidad original de nuestra prueba era 'G', +2 debe ser 'A'
       expect(res.body.song).toHaveProperty('original_key', 'A');
-      // El contenido debía actualizar G a A manteniendo el texto
       expect(res.body.song.content).toContain('A\nBueno es alabarte oh Señor');
     });
 
@@ -187,7 +198,6 @@ describe('Módulo de Canciones', () => {
         .get(`/api/songs/${testSongId}?transpose=H#`)
         .set('Authorization', `Bearer ${tokenMusico}`);
 
-      // El transposer es resiliente y simplemente devuelve la canción original sin fallar
       expect(res.status).toBe(200);
       expect(res.body.song).toHaveProperty('content');
     });
@@ -196,13 +206,12 @@ describe('Módulo de Canciones', () => {
   describe('4. Actualización y Eliminación (PUT / DELETE)', () => {
     let updateSongId: number;
 
-    // Preparamos una canción específica para editarla y luego borrarla
     beforeAll(async () => {
       const result = await pool.query(`
-        INSERT INTO songs (title, author, original_key, tempo, category, content)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO songs (title, author, original_key, tempo, category, content, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id
-      `, ['Cancion Temporal', 'Autor Test', 'C', 100, 'Adoracion', 'C\\nTest']);
+      `, ['Cancion Temporal', 'Autor Test', 'C', 100, 'Adoracion', 'C\\nTest', 2]);
       updateSongId = result.rows[0].id;
     });
 
@@ -226,7 +235,7 @@ describe('Módulo de Canciones', () => {
           tempo: 105,
           category: 'Alabanza',
           content: 'D\\nTest Editado',
-          themes: ['restauracion'] // Nuevo tema dinámico
+          themes: ['restauracion']
         });
 
       expect(res.status).toBe(200);
@@ -267,7 +276,6 @@ describe('Módulo de Canciones', () => {
 
   describe('5. Manejo de Errores Internos (500) y Casos Límite', () => {
     it('Debería retornar 500 al fallar la creación de canción', async () => {
-      // POST usa transacciones, así que espiamos 'connect'
       const connectSpy = (jest.spyOn(pool, 'connect') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
       
       const res = await request(app)
@@ -280,7 +288,6 @@ describe('Módulo de Canciones', () => {
     });
 
     it('Debería retornar 500 al fallar la obtención de todas las canciones', async () => {
-      // GET usa consultas simples, espiamos 'query'
       const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
       const res = await request(app).get('/api/songs').set('Authorization', `Bearer ${tokenMusico}`);
       expect(res.status).toBe(500);
@@ -303,7 +310,6 @@ describe('Módulo de Canciones', () => {
     });
 
     it('Debería retornar 500 al fallar la actualización', async () => {
-      // PUT usa transacciones, espiamos 'connect'
       const connectSpy = (jest.spyOn(pool, 'connect') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
       const res = await request(app)
         .put('/api/songs/1')
@@ -333,10 +339,10 @@ describe('Módulo de Canciones', () => {
 
     beforeAll(async () => {
       const result = await pool.query(`
-        INSERT INTO songs (title, author, original_key, tempo, category, content, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO songs (title, author, original_key, tempo, category, content, status, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id
-      `, ['Cancion Para Revisar', 'Autor', 'C', 100, 'Alabanza', 'C\\nLetra', 'Pendiente']);
+      `, ['Cancion Para Revisar', 'Autor', 'C', 100, 'Alabanza', 'C\\nLetra', 'Pendiente', 1]);
       pendingSongId = result.rows[0].id;
     });
 
@@ -366,6 +372,24 @@ describe('Módulo de Canciones', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.song).toHaveProperty('status', 'Aprobado');
+    });
+  });
+
+  describe('7. Trazabilidad y Auditoría (Sprint 2)', () => {
+    it('Debería retornar el historial de cambios de una canción existente (200)', async () => {
+      const songsRes = await request(app)
+        .get('/api/songs')
+        .set('Authorization', `Bearer ${tokenMusico}`);
+      
+      const songId = songsRes.body.songs[0].id;
+
+      const res = await request(app)
+        .get(`/api/songs/${songId}/history`)
+        .set('Authorization', `Bearer ${tokenMusico}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('history');
+      expect(Array.isArray(res.body.history)).toBe(true);
     });
   });
 });
