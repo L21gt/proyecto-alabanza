@@ -97,4 +97,27 @@ describe('Motor de Transposición (Cifrado Americano)', () => {
       expect(transposeSongContent(original, 0)).toBe(original);
     });
   });
+
+  describe('Acordes Avanzados, Alteraciones de Jazz/Gospel y Marcadores de Partitura (Sprint 2)', () => {
+    it('Debería transponer acordes con alteraciones complejas (m7b5, 7#9, maj7#11, add9)', () => {
+      expect(transposeChord('F#m7b5', 2)).toBe('G#m7b5');
+      expect(transposeChord('C7#9', 4)).toBe('E7#9');
+      expect(transposeChord('Ebmaj7#11', -1)).toBe('Dmaj7#11');
+      expect(transposeChord('Gadd9', 2)).toBe('Aadd9');
+    });
+
+    it('Debería transponer líneas que contienen marcadores de estructura como (2x), (Bis) y barras de compás (|)', () => {
+      const original = "| G   D/F# | Em   C   (2x) |";
+      const expected = "| A   E/G# | F#m   D   (2x) |";
+      // Subir 2 semitonos (G -> A)
+      expect(transposeSongContent(original, 2)).toBe(expected);
+    });
+
+    it('Debería transponer progresiones complejas con acordes alterados y bajos invertidos en canciones reales', () => {
+      const original = "Cmaj7   Bm7b5/E   Am7   G7#9\nGrande es tu misericordia";
+      const expected = "Dmaj7   C#m7b5/F#   Bm7   A7#9\nGrande es tu misericordia";
+      // Subir 2 semitonos
+      expect(transposeSongContent(original, 2)).toBe(expected);
+    });
+  });
 });
