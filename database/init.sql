@@ -74,3 +74,29 @@ CREATE TABLE setlist_songs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     group_name VARCHAR(50)
 );
+
+-- ============================================================================
+-- AUDIT TRAIL & BORRADORES EDITORIALES (SPRINT 2)
+-- ============================================================================
+
+-- 1. Agregamos el estado 'Borrador' al tipo enumerado existente
+ALTER TYPE song_status ADD VALUE IF NOT EXISTS 'Borrador';
+
+-- 2. Agregamos la referencia del usuario creador en la tabla songs
+ALTER TABLE songs 
+ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+
+-- 3. Creamos la tabla de bitácora de auditoría para el historial de cambios
+CREATE TABLE IF NOT EXISTS song_audit_logs (
+    id SERIAL PRIMARY KEY,
+    song_id INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(50) NOT NULL, -- 'CREACION', 'EDICION', 'CAMBIO_ESTADO'
+    previous_status song_status,
+    new_status song_status,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índice para acelerar las búsquedas del historial de una canción en el frontend
+CREATE INDEX IF NOT EXISTS idx_song_audit_logs_song_id ON song_audit_logs(song_id);

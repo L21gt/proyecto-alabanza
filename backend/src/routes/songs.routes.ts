@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken, verifyAdmin } from '../middlewares/auth.middleware';
-import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus, getPendingSongs } from '../controllers/songs.controller';
+import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus, getPendingSongs, getSongAuditHistory } from '../controllers/songs.controller';
 
 const router = Router();
 
@@ -12,6 +12,9 @@ router.get('/pending', verifyToken, verifyAdmin, getPendingSongs);
 
 // Ruta de Lectura por ID (Músicos y Admin)
 router.get('/:id', verifyToken, getSongById);
+
+// Endpoint para obtener la línea de tiempo de auditoría de una canción (Sprint 2)
+router.get('/:id/history', verifyToken, getSongAuditHistory);
 
 // Ruta de Creación (TODOS pueden proponer, el controlador decide si nace 'Pendiente' o 'Aprobada')
 router.post('/', verifyToken, createSong);
