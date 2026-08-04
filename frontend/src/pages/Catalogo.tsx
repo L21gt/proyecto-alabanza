@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Importamos SongFilters explícitamente como tipo para cumplir con verbatimModuleSyntax
 import { getSongs, type SongFilters } from '../services/songs.service';
 import type { Song } from '../types';
 import './Catalogo.css';
@@ -22,8 +21,7 @@ const Catalogo: React.FC = () => {
   const navigate = useNavigate();
   const userRole = localStorage.getItem('userRole');
 
-  // useCallback previene que la función se recree en cada render,
-  // evitando ciclos infinitos cuando se pasa como dependencia en useEffect.
+  // Limpieza de sesión y redirección por expiración de credenciales
   const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
@@ -31,35 +29,34 @@ const Catalogo: React.FC = () => {
     navigate('/login');
   }, [navigate]);
 
-  // Efecto de Debounce: Espera 500ms después de que el usuario deja de escribir
+  // Manejo de retraso (debounce) para optimizar peticiones de búsqueda
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setPage(1); // Reiniciar a la primera página al realizar una nueva búsqueda
+      setPage(1);
     }, 500);
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  // Manejador genérico para los selectores de filtros
+  // Actualización de estado al modificar filtros de categoría o tonalidad
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    setPage(1); // Reiniciar la paginación al cambiar un filtro
+    setPage(1);
   };
 
-  // Efecto principal para obtener los datos del servidor
+  // Petición asíncrona para la obtención de registros paginados y filtrados
   useEffect(() => {
     const fetchSongs = async () => {
       setLoading(true);
       setError('');
       try {
-        // Construimos el payload de filtros para el servicio
         const queryFilters: SongFilters = {
           search: debouncedSearchTerm,
           category: filters.category,
           original_key: filters.original_key,
           page: page,
-          limit: 12
+          limit: 24 // Aumentado a 24 para optimizar la vista de lista compacta
         };
         
         const data = await getSongs(queryFilters);
@@ -95,7 +92,7 @@ const Catalogo: React.FC = () => {
       </header>
 
       <div className="catalogo-layout">
-        {/* Panel Lateral de Filtros */}
+        {/* Panel lateral de filtrado avanzado */}
         <aside className="filters-sidebar">
           <h3>Filtros</h3>
           <div className="filter-group">
@@ -138,7 +135,7 @@ const Catalogo: React.FC = () => {
           </div>
         </aside>
 
-        {/* Cuadrícula Principal de Canciones */}
+        {/* Vista principal de canciones en formato de lista compacta */}
         <main className="catalogo-main">
           {loading ? (
             <div className="loading-container">Cargando catálogo...</div>
@@ -148,22 +145,37 @@ const Catalogo: React.FC = () => {
             <p className="empty-catalog-message">No se encontraron canciones con estos filtros.</p>
           ) : (
             <>
-              <div className="songs-grid">
+              <div className="songs-list">
+                <div className="songs-list-header">
+                  <span>Título / Autor</span>
+                  <span>Tonalidad</span>
+                  <span>Categoría</span>
+                  <span>Acción</span>
+                </div>
                 {songs.map((song) => (
-                  <div key={song.id} className="song-card" onClick={() => navigate(`/cancion/${song.id}`)}>
-                    <div>
-                      <h3 className="song-title">{song.title}</h3>
-                      <p className="song-author">{song.author}</p>
-                      <div className="song-meta">
-                        <span className="badge-key">{song.original_key}</span>
-                        <span>{song.category}</span>
-                      </div>
+                  <div 
+                    key={song.id} 
+                    className="song-list-item" 
+                    onClick={() => navigate(`/cancion/${song.id}`)}
+                  >
+                    <div className="song-item-info">
+                      <h4 className="song-item-title">{song.title}</h4>
+                      <span className="song-item-author">{song.author}</span>
+                    </div>
+                    <div className="song-item-key">
+                      <span className="badge-key">{song.original_key}</span>
+                    </div>
+                    <div className="song-item-category">
+                      <span>{song.category}</span>
+                    </div>
+                    <div className="song-item-action">
+                      <span className="action-link">Ver &rarr;</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Controles de Paginación */}
+              {/* Controles de paginación */}
               {pagination.totalPages > 1 && (
                 <div className="pagination-controls">
                   <button 
@@ -174,7 +186,7 @@ const Catalogo: React.FC = () => {
                     &laquo; Anterior
                   </button>
                   <span className="page-indicator">
-                    Página {pagination.currentPage} de {pagination.totalPages}
+                    Página {pagination.currentPage} de {pagination.totalPages} (Total: {pagination.totalItems})
                   </span>
                   <button 
                     className="btn-secondary" 

@@ -76,7 +76,8 @@ const Repertorios: React.FC = () => {
     <div className="repertorios-container">
       <header className="repertorios-header">
         <h2 className="repertorios-title">Gestor de Repertorios</h2>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        {/* Se sustituyó el estilo inline por una clase CSS dedicada */}
+        <div className="repertorios-header-actions">
           {/* BOTÓN AGREGADO PARA SUGERIR CANCIONES */}
           <button 
             onClick={() => navigate('/cancion/nueva')} 

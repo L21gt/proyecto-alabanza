@@ -132,3 +132,34 @@
   color: var(--text-secondary, #94a3b8);
   padding: 3rem;
 }
+
+/* Contenedor de acciones del encabezado para sustituir el estilo inline */
+.repertorios-header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ==========================================================================
+   Estilos Responsivos (Móviles - max-width: 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .repertorios-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .repertorios-title {
+    text-align: center;
+  }
+
+  .repertorios-header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .repertorios-header-actions button {
+    width: 100%;
+  }
+}
