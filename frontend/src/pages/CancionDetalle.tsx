@@ -4,6 +4,18 @@ import { getSongById, deleteSong } from '../services/songs.service';
 import type { Song } from '../types';
 import './CancionDetalle.css';
 
+// Interfaz para tipar los registros de auditoría devueltos por /api/songs/:id/history
+interface AuditLog {
+  id: number;
+  action: string;
+  previous_status?: string;
+  new_status?: string;
+  notes?: string;
+  created_at: string;
+  user_name: string;
+  user_email?: string;
+}
+
 const CancionDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -16,7 +28,12 @@ const CancionDetalle: React.FC = () => {
   const [error, setError] = useState('');
   const [transposeOffset, setTransposeOffset] = useState(0);
 
-  // RBAC validation: Retrieve current user role from session
+  // ESTADOS DEL HISTORIAL DE AUDITORÍA (Sprint 2)
+  const [showHistory, setShowHistory] = useState(false);
+  const [auditHistory, setAuditHistory] = useState<AuditLog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Validación de control de acceso en interfaz (RBAC)
   const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
@@ -37,11 +54,44 @@ const CancionDetalle: React.FC = () => {
     fetchSong();
   }, [id, transposeOffset]);
 
+  // Obtención asíncrona de la línea de tiempo de auditoría
+  const handleToggleHistory = async () => {
+    if (!id) return;
+    
+    // Si ya está abierto, simplemente lo ocultamos
+    if (showHistory) {
+      setShowHistory(false);
+      return;
+    }
+
+    setLoadingHistory(true);
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/songs/${id}/history`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('No se pudo cargar el historial');
+      
+      const data = await response.json();
+      setAuditHistory(data.history || []);
+      setShowHistory(true);
+    } catch (err) {
+      console.error("Error al obtener historial de auditoría:", err);
+      alert("Hubo un problema al cargar el historial de cambios.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleTranspose = (amount: number) => {
     setTransposeOffset(prev => prev + amount);
   };
 
-  // Resource deletion handler
+  // Manejador de eliminación permanente del recurso
   const handleDeleteDirect = async () => {
     if (!id) return;
 
@@ -83,7 +133,6 @@ const CancionDetalle: React.FC = () => {
         <h1 className="detalle-title">{song.title}</h1>
         <p className="detalle-author">{song.author}</p>
 
-        {/* INICIO NUEVO BLOQUE DE METADATOS */}
         <div className="detalle-metadata">
           {song.video_link && (
             <a 
@@ -109,7 +158,6 @@ const CancionDetalle: React.FC = () => {
             </div>
           )}
         </div>
-        {/* FIN NUEVO BLOQUE DE METADATOS */}
       </div>
 
       <div className="controls-panel">
@@ -134,7 +182,15 @@ const CancionDetalle: React.FC = () => {
           Tempo: {song.tempo} BPM
         </span>
 
-        {/* Conditional rendering for destructive actions (Admin only) */}
+        {/* BOTÓN AGREGADO PARA VISUALIZAR EL HISTORIAL DE CAMBIOS */}
+        <button 
+          className="btn-history"
+          onClick={handleToggleHistory}
+          disabled={loadingHistory}
+        >
+          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Historial' : '📜 Ver Historial'}
+        </button>
+
         {userRole === 'Admin' && (
           <div className="action-buttons">
             <button 
@@ -159,6 +215,38 @@ const CancionDetalle: React.FC = () => {
       <div className="lyric-content">
         {song.content}
       </div>
+
+      {/* SECCIÓN DESPLEGABLE DEL HISTORIAL DE CAMBIOS (AUDIT TRAIL) */}
+      {showHistory && (
+        <section className="audit-history-section">
+          <h3 className="audit-history-title">Historial de Auditoría de la Canción</h3>
+          
+          {auditHistory.length === 0 ? (
+            <p className="audit-notes">No hay registros de cambios para esta canción todavía.</p>
+          ) : (
+            <div className="audit-timeline">
+              {auditHistory.map((log) => (
+                <div key={log.id} className="audit-item">
+                  <div className="audit-item-header">
+                    <span className="audit-action-badge">{log.action}</span>
+                    <span className="audit-date">
+                      {new Date(log.created_at).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <span className="audit-user">Responsable: {log.user_name}</span>
+                  {log.notes && <p className="audit-notes">{log.notes}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };

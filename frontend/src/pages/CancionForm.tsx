@@ -10,6 +10,7 @@ const CancionForm: React.FC = () => {
   
   // Detectamos si la URL incluye un ID de repertorio: /cancion/nueva?repertorioId=5
   const repertorioId = searchParams.get('repertorioId'); 
+  const role = localStorage.getItem('userRole');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,13 +34,13 @@ const CancionForm: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Guardado flexible: permite especificar si se publica de inmediato o si se guarda en estado Borrador
+  const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Procesamos los temas: de string separado por comas a un array limpio
       const themesArray = formData.themes
         .split(',')
         .map(t => t.trim())
@@ -54,19 +55,17 @@ const CancionForm: React.FC = () => {
         category: formData.category,
         themes: themesArray,
         video_link: formData.video_link,
-        content: formData.content
+        content: formData.content,
+        // Si el admin presionó "Guardar como Borrador", enviamos ese estado explícito al servidor
+        status: targetStatus
       };
 
-      // Guardamos la canción en el backend
       const response = await createSong(songPayload);
-      
-      // CORRECCIÓN: Como el servicio ya nos devuelve el tipo 'Song' correcto, usamos su ID directo
       const createdSongId = response.id;
 
-      // LOGICA DEL REPERTORIO AL VUELO: 
+      // LÓGICA DEL REPERTORIO AL VUELO
       if (repertorioId && createdSongId) {
         try {
-          // Enlazamos la canción recién creada al repertorio
           await addSongToSetlist(repertorioId, {
             song_id: createdSongId,
             transposed_key: formData.original_key,
@@ -75,16 +74,17 @@ const CancionForm: React.FC = () => {
           
           alert('Canción guardada y agregada exitosamente a tu repertorio.');
           navigate(`/repertorios/${repertorioId}`);
-          return; // Detenemos la ejecución aquí para que NO vaya al catálogo
+          return;
         } catch (linkErr) {
           console.error("Error al enlazar al repertorio:", linkErr);
-          alert('La canción se sugirió correctamente, pero hubo un error al enlazarla a tu lista.');
+          alert('La canción se guardó correctamente, pero hubo un error al enlazarla a tu lista.');
         }
       }
 
-      // Flujo normal (Si el usuario NO venía de un repertorio)
-      const role = localStorage.getItem('userRole');
-      if (role === 'Admin') {
+      // Flujo de notificación según el estado editorial resultante
+      if (targetStatus === 'Borrador') {
+        alert('Borrador guardado exitosamente. No será visible en el catálogo público.');
+      } else if (role === 'Admin') {
         alert('Canción publicada exitosamente en el catálogo.');
       } else {
         alert('Sugerencia enviada exitosamente. El administrador la revisará pronto.');
@@ -115,7 +115,7 @@ const CancionForm: React.FC = () => {
 
         {error && <div className="error-banner">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="song-form">
+        <form onSubmit={(e) => handleSave(e)} className="song-form">
           <div className="form-grid">
             <div className="form-group">
               <label htmlFor="title">Título de la Canción *</label>
@@ -179,9 +179,24 @@ const CancionForm: React.FC = () => {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={() => navigate('/catalogo')}>Cancelar</button>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/catalogo')}>
+              Cancelar
+            </button>
+            
+            {/* BOTÓN OPcIONAL: Visible únicamente para administradores para guardar un borrador en revisión */}
+            {role === 'Admin' && (
+              <button 
+                type="button" 
+                className="btn-draft" 
+                disabled={loading}
+                onClick={(e) => handleSave(e, 'Borrador')}
+              >
+                {loading ? 'Guardando...' : '💾 Guardar como Borrador'}
+              </button>
+            )}
+
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar Canción'}
+              {loading ? 'Guardando...' : role === 'Admin' ? '🚀 Publicar Canción' : 'Guardar Canción'}
             </button>
           </div>
         </form>

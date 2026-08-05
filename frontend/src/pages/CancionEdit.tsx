@@ -7,6 +7,7 @@ import './Login.css';
 const CancionEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const role = localStorage.getItem('userRole');
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +22,6 @@ const CancionEdit: React.FC = () => {
   const [content, setContent] = useState('');
   const [videoLink, setVideoLink] = useState('');
   const [originalStatus, setOriginalStatus] = useState('');
-
 
   useEffect(() => {
     const loadSongData = async () => {
@@ -47,7 +47,8 @@ const CancionEdit: React.FC = () => {
     loadSongData();
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Permite guardar especificando si se cambia el estado a Borrador o Aprobado
+  const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
     if (!id) return;
     setIsLoading(true);
@@ -67,16 +68,20 @@ const CancionEdit: React.FC = () => {
         category,
         themes: themesArray,
         content,
-        video_link: videoLink
+        video_link: videoLink,
+        status: targetStatus || 'Aprobado'
       });
 
       // LÓGICA DE ENRUTAMIENTO INTELIGENTE
-      if (originalStatus === 'Pendiente') {
+      if (targetStatus === 'Borrador') {
+        alert('Canción guardada en estado Borrador. No aparecerá en el catálogo público.');
+        navigate('/admin');
+      } else if (originalStatus === 'Pendiente') {
         alert('Canción editada y aprobada exitosamente.');
-        navigate('/admin'); // Regresa a limpiar la cola de pendientes
+        navigate('/admin');
       } else {
         alert('Cambios guardados correctamente.');
-        navigate(`/cancion/${id}`); // O navigate('/catalogo') si prefieres ir a la lista
+        navigate(`/cancion/${id}`);
       }
     } catch (err) {
       if (err instanceof Error) setError(err.message);
@@ -116,7 +121,7 @@ const CancionEdit: React.FC = () => {
       
       {error && <div className="error-message">{error}</div>}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => handleSave(e)}>
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Título</label>
@@ -176,17 +181,30 @@ const CancionEdit: React.FC = () => {
         </div>
 
         <div className="form-actions">
+          {/* Se sustituyó el estilo inline por una clase CSS dedicada (.btn-cancel) */}
           <button 
             type="button" 
-            className="btn-primary" 
-            style={{ backgroundColor: 'var(--text-secondary)' }} 
-            onClick={() => navigate(-1)} // <-- Navega hacia atrás dinámicamente
+            className="btn-cancel" 
+            onClick={() => navigate(-1)}
             disabled={isLoading}
           >
             Cancelar
           </button>
+
+          {/* Opción editorial de guardar revisión incompleta solo visible para Admin */}
+          {role === 'Admin' && (
+            <button 
+              type="button" 
+              className="btn-draft" 
+              disabled={isLoading}
+              onClick={(e) => handleSave(e, 'Borrador')}
+            >
+              {isLoading ? 'Guardando...' : '💾 Guardar como Borrador'}
+            </button>
+          )}
+
           <button type="submit" className="btn-primary" disabled={isLoading}>
-            {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+            {isLoading ? 'Guardando...' : 'Guardar Cambios y Publicar'}
           </button>
         </div>
       </form>
