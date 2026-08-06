@@ -189,7 +189,7 @@ const CancionDetalle: React.FC = () => {
           disabled={loadingHistory}
           title="Ver registro cronológico de creaciones y ediciones"
         >
-          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Bitácora' : '📜 Ver Bitácora de Cambios'}
+          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Historial de cambios' : '📜 Ver el Historial de Cambios'}
         </button>
 
         {userRole === 'Admin' && (
