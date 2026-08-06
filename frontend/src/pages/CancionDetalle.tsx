@@ -187,8 +187,9 @@ const CancionDetalle: React.FC = () => {
           className="btn-history"
           onClick={handleToggleHistory}
           disabled={loadingHistory}
+          title="Ver registro cronológico de creaciones y ediciones"
         >
-          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Historial' : '📜 Ver Historial'}
+          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Bitácora' : '📜 Ver Bitácora de Cambios'}
         </button>
 
         {userRole === 'Admin' && (

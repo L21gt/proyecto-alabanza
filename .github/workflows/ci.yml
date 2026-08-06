@@ -86,4 +86,4 @@ jobs:
             exit 1
           fi
           curl -sS -f -X POST "$VERCEL_HOOK"
-          echo "✅ Despliegue del frontend ordenado a Vercel por GitHub Actions."
+          echo "✅ Despliegue del frontend ordenado a Vercel tras superar las pruebas."
