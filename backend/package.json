@@ -13,7 +13,8 @@
     "migrate:create": "node-pg-migrate create --migration-file-language ts",
     "migrate:up": "dotenv -e .env -- node-pg-migrate --database-url-var DATABASE_URL up",
     "migrate:down": "dotenv -e .env -- node-pg-migrate --database-url-var DATABASE_URL down",
-    "migrate:test": "dotenv -e .env.test -- node-pg-migrate --database-url-var DATABASE_URL up"
+    "migrate:test": "dotenv -e .env.test -- node-pg-migrate --database-url-var DATABASE_URL up",
+    "migrate:prod": "node-pg-migrate --database-url-var DATABASE_URL up"
   },
   "keywords": [],
   "author": "",
