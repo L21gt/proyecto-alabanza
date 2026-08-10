@@ -93,7 +93,7 @@ export const createSong = async (songData: Omit<Song, 'id' | 'created_at' | 'upd
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify(songData)
+    body: JSON.stringify(songData) // <-- LÍNEA FALTANTE
   });
 
   const data = await response.json();
@@ -102,7 +102,6 @@ export const createSong = async (songData: Omit<Song, 'id' | 'created_at' | 'upd
     throw new Error(data.error || 'Error al guardar la canción');
   }
 
-  // CORRECCIÓN: Desenvolvemos el objeto para que TypeScript reciba el 'Song' real
   return data.song || data;
 };
 
@@ -115,7 +114,7 @@ export const updateSong = async (id: string, songData: Omit<Song, 'id' | 'create
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify(songData)
+    body: JSON.stringify(songData) // <-- LÍNEA FALTANTE
   });
 
   if (!response.ok) {
@@ -141,7 +140,7 @@ export const deleteSong = async (id: string): Promise<void> => {
   }
 };
 
-export const updateSongStatus = async (id: string | number, status: 'Aprobado' | 'Pendiente'): Promise<void> => {
+export const updateSongStatus = async (id: string | number, status: 'Aprobado' | 'Pendiente' | 'Borrador'): Promise<void> => {
   const token = localStorage.getItem('token');
   
   const response = await fetch(`${API_URL}/${id}/status`, {
@@ -150,7 +149,7 @@ export const updateSongStatus = async (id: string | number, status: 'Aprobado' |
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status }) // <-- LÍNEA FALTANTE
   });
 
   if (!response.ok) {
@@ -161,7 +160,7 @@ export const updateSongStatus = async (id: string | number, status: 'Aprobado' |
 
 export const getPendingSongs = async (): Promise<Song[]> => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`${BASE_URL}/songs/pending`, {
+  const response = await fetch(`${API_URL}/pending`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -172,4 +171,38 @@ export const getPendingSongs = async (): Promise<Song[]> => {
   if (!response.ok) throw new Error('Error al obtener las canciones pendientes');
   const data = await response.json();
   return data.songs || data || [];
+};
+
+// ============================================
+// NUEVOS ENDPOINTS: PAPELERA DE RECICLAJE
+// ============================================
+export const getDeletedSongs = async (): Promise<Song[]> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/deleted`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) throw new Error('Error al obtener la papelera de reciclaje');
+  const data = await response.json();
+  return data.songs || data || [];
+};
+
+export const restoreSong = async (id: string | number): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/${id}/restore`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Error al restaurar la canción');
+  }
 };

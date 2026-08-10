@@ -1,29 +1,34 @@
 import { Router } from 'express';
+import { 
+  createSong, 
+  getAllSongs, 
+  getSongById, 
+  updateSong, 
+  deleteSong, 
+  updateSongStatus, 
+  getPendingSongs,
+  getSongAuditHistory,
+  getDeletedSongs,
+  restoreSong
+} from '../controllers/songs.controller';
 import { verifyToken, verifyAdmin } from '../middlewares/auth.middleware';
-import { createSong, getAllSongs, getSongById, updateSong, deleteSong, updateSongStatus, getPendingSongs, getSongAuditHistory } from '../controllers/songs.controller';
 
 const router = Router();
 
-// Rutas de Lectura (Músicos y Admin)
+// Catálogo público
 router.get('/', verifyToken, getAllSongs);
 
-// NUEVA RUTA: Obtener Canciones Pendientes (SOLO Admin)
+// Rutas de administración especializadas (Deben ir ANTES de /:id)
 router.get('/pending', verifyToken, verifyAdmin, getPendingSongs);
+router.get('/deleted', verifyToken, verifyAdmin, getDeletedSongs); // <-- NUEVA
 
-// Ruta de Lectura por ID (Músicos y Admin)
+// Operaciones por ID específico
 router.get('/:id', verifyToken, getSongById);
-
-// Endpoint para obtener la línea de tiempo de auditoría de una canción (Sprint 2)
-router.get('/:id/history', verifyToken, getSongAuditHistory);
-
-// Ruta de Creación (TODOS pueden proponer, el controlador decide si nace 'Pendiente' o 'Aprobada')
+router.get('/:id/history', verifyToken, verifyAdmin, getSongAuditHistory);
 router.post('/', verifyToken, createSong);
-
-// Rutas de Edición y Eliminación (SOLO Admin)
-router.put('/:id', verifyToken, verifyAdmin, updateSong);
-router.delete('/:id', verifyToken, verifyAdmin, deleteSong);
-
-// NUEVA RUTA: Aprobar Canción (SOLO Admin)
+router.put('/:id', verifyToken, updateSong);
+router.delete('/:id', verifyToken, deleteSong);
 router.patch('/:id/status', verifyToken, verifyAdmin, updateSongStatus);
+router.patch('/:id/restore', verifyToken, verifyAdmin, restoreSong); // <-- NUEVA
 
 export default router;

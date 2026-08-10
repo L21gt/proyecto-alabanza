@@ -1,18 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPendingUsers, updateUserStatus } from '../services/users.service';
-import { deleteSong, getPendingSongs } from '../services/songs.service';
+import { deleteSong, getPendingSongs, getDeletedSongs, restoreSong } from '../services/songs.service';
 import type { PendingUser } from '../services/users.service';
 import type { Song } from '../types';
 import './AdminDashboard.css';
 
-// Extendemos la interfaz Song localmente por si 'status' aún no está definido en types.ts
+// Extendemos la interfaz Song localmente
 type PendingSong = Song & { status?: string };
+type DeletedSong = Song & { deleted_by_name?: string };
 
 const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'canciones'>('canciones');
+  // Añadimos 'papelera' como un nuevo estado posible para las pestañas
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'canciones' | 'papelera'>('canciones');
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [songs, setSongs] = useState<PendingSong[]>([]); 
+  const [deletedSongs, setDeletedSongs] = useState<DeletedSong[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -31,9 +34,12 @@ const AdminDashboard: React.FC = () => {
       const usersData = await getPendingUsers();
       setUsers(usersData);
 
-      // CORRECCIÓN: Consultamos directamente el endpoint de pendientes
       const pendingSongsData = await getPendingSongs();
       setSongs(pendingSongsData);
+
+      // Obtenemos los elementos de la papelera
+      const deletedSongsData = await getDeletedSongs();
+      setDeletedSongs(deletedSongsData);
 
       setError('');
     } catch (err) {
@@ -44,7 +50,6 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Le indicamos al linter que confíe en este Data Fetching inicial
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
@@ -69,6 +74,16 @@ const AdminDashboard: React.FC = () => {
     if (!window.confirm('¿Estás seguro de que deseas rechazar y eliminar esta propuesta?')) return;
     try {
       await deleteSong(id.toString());
+      await fetchData();
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
+    }
+  };
+
+  const handleRestoreSong = async (id: string | number) => {
+    if (!window.confirm('¿Estás seguro de que deseas restaurar esta canción al catálogo?')) return;
+    try {
+      await restoreSong(id);
       await fetchData();
     } catch (err) {
       if (err instanceof Error) alert(err.message);
@@ -177,6 +192,50 @@ const AdminDashboard: React.FC = () => {
     );
   };
 
+  const renderDeletedTable = () => {
+    if (deletedSongs.length === 0) {
+      return (
+        <div className="empty-state">
+          <h3>Papelera Vacía</h3>
+          <p>No hay canciones eliminadas recientemente.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="table-responsive">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Autor Original</th>
+              <th>Categoría</th>
+              <th>Eliminado Por</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deletedSongs.map((song) => (
+              <tr key={song.id}>
+                <td><strong style={{ textDecoration: 'line-through', color: '#888' }}>{song.title}</strong></td>
+                <td>{song.author}</td>
+                <td>{song.category}</td>
+                <td>{song.deleted_by_name || 'Usuario del Sistema'}</td>
+                <td className="actions-cell">
+                  <button 
+                    className="btn-approve" 
+                    onClick={() => handleRestoreSong(song.id)}
+                  >
+                    Restaurar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -202,6 +261,12 @@ const AdminDashboard: React.FC = () => {
         >
           Canciones Pendientes {songs.length > 0 && `(${songs.length})`}
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'papelera' ? 'active' : ''}`}
+          onClick={() => setActiveTab('papelera')}
+        >
+          Papelera {deletedSongs.length > 0 && `(${deletedSongs.length})`}
+        </button>
       </div>
 
       {loading ? (
@@ -212,6 +277,7 @@ const AdminDashboard: React.FC = () => {
         <>
           {activeTab === 'usuarios' && renderUsersTable()}
           {activeTab === 'canciones' && renderSongsTable()}
+          {activeTab === 'papelera' && renderDeletedTable()}
         </>
       )}
     </div>

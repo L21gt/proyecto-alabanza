@@ -48,7 +48,7 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
       [newSong.id, req.user?.id || null, 'CREACION', initialStatus, `Canción registrada en estado: ${initialStatus}`]
     );
 
-    // MANTENEMOS TU LÓGICA DE TEMAS (ETIQUETAS)
+    // LÓGICA DE TEMAS (ETIQUETAS)
     if (themes && Array.isArray(themes) && themes.length > 0) {
       for (const themeName of themes) {
         const normalizedTheme = themeName.trim().toLowerCase();
@@ -101,8 +101,8 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
   const { search, category, author, original_key, page = '1', limit = '12' } = req.query;
 
   try {
-    // Solo se exponen públicamente en el catálogo las canciones con estado 'Aprobado'
-    let query = "SELECT * FROM songs WHERE status = 'Aprobado'";
+    // SPRINT 3 (Soft Deletes): Filtramos las eliminadas lógicamente y solo mostramos las Aprobadas
+    let query = "SELECT * FROM songs WHERE status = 'Aprobado' AND deleted_at IS NULL";
     const queryParams: any[] = [];
     let paramCount = 1;
 
@@ -177,10 +177,11 @@ export const getSongById = async (req: AuthRequest, res: Response): Promise<void
     const { id } = req.params;
     const { transpose } = req.query; 
 
-    const songResult = await pool.query('SELECT * FROM songs WHERE id = $1', [id]);
+    // SPRINT 3 (Soft Deletes): Filtramos si está eliminada
+    const songResult = await pool.query('SELECT * FROM songs WHERE id = $1 AND deleted_at IS NULL', [id]);
     
     if (songResult.rows.length === 0) {
-      res.status(404).json({ error: 'Canción no encontrada' });
+      res.status(404).json({ error: 'Canción no encontrada o eliminada' });
       return;
     }
 
@@ -198,7 +199,7 @@ export const getSongById = async (req: AuthRequest, res: Response): Promise<void
       INNER JOIN song_themes st ON t.id = st.theme_id
       WHERE st.song_id = $1
     `, [id]);
-    song.themes = themesResult.rows.map(row => row.name);
+    song.themes = themesResult.rows.map((row: {name: string}) => row.name);
 
     if (transpose && !isNaN(Number(transpose))) {
       const steps = Number(transpose);
@@ -228,11 +229,11 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
   try {
     await client.query('BEGIN');
 
-    // Consultamos el estado anterior para la bitácora de auditoría
-    const prevQuery = await client.query('SELECT status FROM songs WHERE id = $1', [id]);
-    if (prevQuery.rows.length === 0) {
+    // SPRINT 3 (Soft Deletes): Evitar editar canciones borradas
+    const prevQuery = await client.query('SELECT status, deleted_at FROM songs WHERE id = $1', [id]);
+    if (prevQuery.rows.length === 0 || prevQuery.rows[0].deleted_at !== null) {
       await client.query('ROLLBACK');
-      res.status(404).json({ error: 'Canción no encontrada' });
+      res.status(404).json({ error: 'Canción no encontrada o eliminada' });
       return;
     }
     const previousStatus = prevQuery.rows[0].status;
@@ -310,20 +311,47 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
 };
 
 export const deleteSong = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM songs WHERE id = $1 RETURNING id', [id]);
+  const { id } = req.params;
+  const client = await pool.connect();
 
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Canción no encontrada' });
+  try {
+    await client.query('BEGIN');
+
+    // SPRINT 3 (Soft Deletes): Verificamos que exista y no esté ya borrada
+    const checkQuery = await client.query('SELECT status, deleted_at FROM songs WHERE id = $1', [id]);
+    
+    if (checkQuery.rows.length === 0 || checkQuery.rows[0].deleted_at !== null) {
+      await client.query('ROLLBACK');
+      res.status(404).json({ error: 'Canción no encontrada o ya estaba eliminada' });
       return;
     }
 
-    res.status(200).json({ message: 'Canción eliminada exitosamente' });
+    const previousStatus = checkQuery.rows[0].status;
+
+    // Ejecutamos la baja lógica marcando fecha y responsable
+    await client.query(
+      `UPDATE songs 
+       SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2`,
+      [req.user?.id || null, id]
+    );
+
+    // REGISTRO DE AUDITORÍA: Guardamos la acción de eliminación lógica en la bitácora
+    await client.query(
+      `INSERT INTO song_audit_logs (song_id, user_id, action, previous_status, notes) 
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, req.user?.id || null, 'ELIMINACION', previousStatus, 'La canción fue enviada a la papelera (Soft Delete)']
+    );
+
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'Canción eliminada lógicamente de manera exitosa' });
 
   } catch (error) {
-    console.error('Error al eliminar:', error);
-    res.status(500).json({ error: 'Error interno al eliminar la canción' });
+    await client.query('ROLLBACK');
+    console.error('Error al eliminar (Soft Delete):', error);
+    res.status(500).json({ error: 'Error interno al intentar eliminar la canción' });
+  } finally {
+    client.release();
   }
 };
 
@@ -348,10 +376,11 @@ export const updateSongStatus = async (req: AuthRequest, res: Response): Promise
   try {
     await client.query('BEGIN');
 
-    const prevQuery = await client.query('SELECT status FROM songs WHERE id = $1', [id]);
-    if (prevQuery.rows.length === 0) {
+    // SPRINT 3 (Soft Deletes): Evitar editar canciones borradas
+    const prevQuery = await client.query('SELECT status, deleted_at FROM songs WHERE id = $1', [id]);
+    if (prevQuery.rows.length === 0 || prevQuery.rows[0].deleted_at !== null) {
       await client.query('ROLLBACK');
-      res.status(404).json({ error: 'Canción no encontrada' });
+      res.status(404).json({ error: 'Canción no encontrada o eliminada' });
       return;
     }
     const previousStatus = prevQuery.rows[0].status;
@@ -386,10 +415,11 @@ export const updateSongStatus = async (req: AuthRequest, res: Response): Promise
 
 export const getPendingSongs = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Ahora retornamos tanto las pendientes en revisión como los borradores para el panel del Admin
+    // SPRINT 3 (Soft Deletes): Ocultar canciones borradas lógicamente del panel Admin
     const result = await pool.query(`
       SELECT * FROM songs 
-      WHERE status IN ('Pendiente', 'Borrador')
+      WHERE status IN ('Pendiente', 'Borrador') 
+      AND deleted_at IS NULL
       ORDER BY created_at DESC
     `);
     res.status(200).json({ songs: result.rows });
@@ -428,5 +458,82 @@ export const getSongAuditHistory = async (req: AuthRequest, res: Response): Prom
   } catch (error) {
     console.error('Error al obtener historial de auditoría de la canción:', error);
     res.status(500).json({ error: 'Error interno al obtener el historial de cambios' });
+  }
+};
+
+// ============================================
+// PAPELERA DE RECICLAJE (Solo Admin)
+// ============================================
+
+export const getDeletedSongs = async (req: AuthRequest, res: Response): Promise<void> => {
+  if (req.user?.role !== 'Admin') {
+    res.status(403).json({ error: 'Acceso denegado.' });
+    return;
+  }
+
+  try {
+    // Obtenemos las canciones que tienen fecha de eliminación
+    const query = `
+      SELECT s.*, u.name as deleted_by_name 
+      FROM songs s
+      LEFT JOIN users u ON s.deleted_by = u.id
+      WHERE s.deleted_at IS NOT NULL
+      ORDER BY s.deleted_at DESC
+    `;
+    const result = await pool.query(query);
+    
+    res.status(200).json({ songs: result.rows });
+  } catch (error) {
+    console.error('Error al obtener la papelera:', error);
+    res.status(500).json({ error: 'Error interno al obtener canciones eliminadas' });
+  }
+};
+
+export const restoreSong = async (req: AuthRequest, res: Response): Promise<void> => {
+  if (req.user?.role !== 'Admin') {
+    res.status(403).json({ error: 'Acceso denegado.' });
+    return;
+  }
+
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Verificamos el estado actual para la bitácora
+    const prevQuery = await client.query('SELECT status, deleted_at FROM songs WHERE id = $1', [id]);
+    if (prevQuery.rows.length === 0 || prevQuery.rows[0].deleted_at === null) {
+      await client.query('ROLLBACK');
+      res.status(404).json({ error: 'La canción no se encuentra en la papelera' });
+      return;
+    }
+    const previousStatus = prevQuery.rows[0].status;
+
+    // Restauramos: Quitamos la fecha de eliminación y el usuario que lo eliminó
+    const updateQuery = `
+      UPDATE songs 
+      SET deleted_at = NULL, deleted_by = NULL, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $1 
+      RETURNING *
+    `;
+    const result = await client.query(updateQuery, [id]);
+
+    // REGISTRO DE AUDITORÍA: Guardamos la restauración
+    await client.query(
+      `INSERT INTO song_audit_logs (song_id, user_id, action, previous_status, new_status, notes) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, req.user?.id || null, 'RESTAURACION', previousStatus, previousStatus, 'La canción fue restaurada desde la papelera']
+    );
+
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'Canción restaurada exitosamente', song: result.rows[0] });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error al restaurar:', error);
+    res.status(500).json({ error: 'Error interno al restaurar la canción' });
+  } finally {
+    client.release();
   }
 };

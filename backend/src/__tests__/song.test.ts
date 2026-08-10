@@ -17,7 +17,7 @@ describe('Módulo de Canciones', () => {
     await pool.query('DELETE FROM songs');
     await pool.query('DELETE FROM users WHERE id IN (1, 2)');
 
-    // 2. INSERTAMOS USUARIOS CON LAS COLUMNAS EXACTAS DE init.sql (password_hash, birth_date, user_role)
+    // 2. INSERTAMOS USUARIOS CON LAS COLUMNAS EXACTAS
     await pool.query(`
       INSERT INTO users (id, name, email, password_hash, birth_date, role, status)
       VALUES 
@@ -38,7 +38,7 @@ describe('Módulo de Canciones', () => {
     await pool.query('DELETE FROM songs');
     await pool.query('DELETE FROM users WHERE id IN (1, 2)');
     
-    // Cerramos la conexión al terminar para evitar procesos "colgados" (memory leaks)
+    // Cerramos la conexión al terminar
     await pool.end();
   });
 
@@ -81,7 +81,6 @@ describe('Módulo de Canciones', () => {
         .set('Authorization', `Bearer ${tokenAdmin}`)
         .send({
           title: 'Canción Incompleta'
-          // Faltan author, original_key, content, etc.
         });
 
       expect(res.status).toBe(400);
@@ -102,15 +101,13 @@ describe('Módulo de Canciones', () => {
           themes: ['Adoracion', 'Fe', 'Nuevo Tema']
         });
 
-      // Validamos la respuesta HTTP
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('message', 'Canción creada y publicada exitosamente');
       expect(res.body.song).toHaveProperty('id');
       expect(res.body.song).toHaveProperty('title', 'Cuan Grande Es El');
 
-      // Validamos directamente en la base de datos que la transacción funcionó
       const result = await pool.query('SELECT * FROM song_themes WHERE song_id = $1', [res.body.song.id]);
-      expect(result.rows.length).toBe(3); // Debe tener 3 temas enlazados
+      expect(result.rows.length).toBe(3); 
     });
 
     it('Debería retornar 500 si la base de datos rechaza una categoría inválida', async () => {
@@ -121,7 +118,7 @@ describe('Módulo de Canciones', () => {
           title: 'Canción Inválida',
           author: 'Autor',
           original_key: 'C',
-          category: 'CategoriaFalsa', // PostgreSQL rechazará esto por su restricción ENUM
+          category: 'CategoriaFalsa', 
           content: 'Letra'
         });
 
@@ -132,7 +129,6 @@ describe('Módulo de Canciones', () => {
   describe('3. Lectura de Canciones (GET)', () => {
     let testSongId: number;
 
-    // Preparamos una canción específica para asegurar que las búsquedas funcionen
     beforeAll(async () => {
       const result = await pool.query(`
         INSERT INTO songs (title, author, original_key, tempo, category, content, created_by)
@@ -146,7 +142,7 @@ describe('Módulo de Canciones', () => {
     it('Debería retornar la lista de todas las canciones (200)', async () => {
       const res = await request(app)
         .get('/api/songs')
-        .set('Authorization', `Bearer ${tokenMusico}`); // Un Músico tiene permisos para leer
+        .set('Authorization', `Bearer ${tokenMusico}`); 
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.songs)).toBe(true);
@@ -180,7 +176,7 @@ describe('Módulo de Canciones', () => {
         .set('Authorization', `Bearer ${tokenMusico}`);
 
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error', 'Canción no encontrada');
+      expect(res.body).toHaveProperty('error', 'Canción no encontrada o eliminada');
     });
 
     it('Debería retornar la canción transpuesta (+2 semitonos) si se incluye en la URL', async () => {
@@ -215,13 +211,13 @@ describe('Módulo de Canciones', () => {
       updateSongId = result.rows[0].id;
     });
 
-    it('Debería denegar la actualización si no es Admin (403)', async () => {
+    it('Debería retornar 400 (Bad Request) si la petición es incompleta, sin importar el rol', async () => {
       const res = await request(app)
         .put(`/api/songs/${updateSongId}`)
         .set('Authorization', `Bearer ${tokenMusico}`)
         .send({ title: 'Intento de Hackeo' });
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(400);
     });
 
     it('Debería actualizar la canción y reemplazar temas (200)', async () => {
@@ -243,13 +239,13 @@ describe('Módulo de Canciones', () => {
       expect(res.body.song).toHaveProperty('original_key', 'D');
     });
 
-    it('Debería eliminar la canción exitosamente (200)', async () => {
+    it('Debería eliminar la canción exitosamente mediante Soft Delete (200)', async () => {
       const res = await request(app)
         .delete(`/api/songs/${updateSongId}`)
         .set('Authorization', `Bearer ${tokenAdmin}`);
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('message', 'Canción eliminada exitosamente');
+      expect(res.body).toHaveProperty('message', 'Canción eliminada lógicamente de manera exitosa');
     });
 
     it('Debería retornar 404 al buscar la canción que acabamos de eliminar', async () => {
@@ -327,10 +323,10 @@ describe('Módulo de Canciones', () => {
     });
 
     it('Debería retornar 500 al fallar la eliminación', async () => {
-      const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
+      const connectSpy = (jest.spyOn(pool, 'connect') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
       const res = await request(app).delete('/api/songs/1').set('Authorization', `Bearer ${tokenAdmin}`);
       expect(res.status).toBe(500);
-      querySpy.mockRestore();
+      connectSpy.mockRestore();
     });
   });
 
@@ -376,7 +372,7 @@ describe('Módulo de Canciones', () => {
   });
 
   describe('7. Trazabilidad y Auditoría (Sprint 2)', () => {
-    it('Debería retornar el historial de cambios de una canción existente (200)', async () => {
+    it('Debería retornar el historial de cambios de una canción existente siendo Admin (200)', async () => {
       const songsRes = await request(app)
         .get('/api/songs')
         .set('Authorization', `Bearer ${tokenMusico}`);
@@ -385,11 +381,67 @@ describe('Módulo de Canciones', () => {
 
       const res = await request(app)
         .get(`/api/songs/${songId}/history`)
-        .set('Authorization', `Bearer ${tokenMusico}`);
+        .set('Authorization', `Bearer ${tokenAdmin}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('history');
       expect(Array.isArray(res.body.history)).toBe(true);
+    });
+  });
+
+  describe('8. Papelera de Reciclaje y Soft Deletes', () => {
+    let deletedSongId: number;
+
+    beforeAll(async () => {
+      // Insertamos una canción y le ponemos fecha de eliminación simulando que está en la papelera
+      const result = await pool.query(`
+        INSERT INTO songs (title, author, original_key, tempo, category, content, status, created_by, deleted_at, deleted_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, $8)
+        RETURNING id
+      `, ['Cancion en Papelera', 'Autor', 'C', 100, 'Alabanza', 'C\\nLetra', 'Aprobado', 2]);
+      deletedSongId = result.rows[0].id;
+    });
+
+    it('Debería denegar acceso a la papelera si no es Admin (403)', async () => {
+      const res = await request(app).get('/api/songs/deleted').set('Authorization', `Bearer ${tokenMusico}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('Debería permitir al Admin ver las canciones eliminadas (200)', async () => {
+      const res = await request(app).get('/api/songs/deleted').set('Authorization', `Bearer ${tokenAdmin}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.songs)).toBe(true);
+    });
+
+    it('Debería denegar restaurar una canción si no es Admin (403)', async () => {
+      const res = await request(app).patch(`/api/songs/${deletedSongId}/restore`).set('Authorization', `Bearer ${tokenMusico}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('Debería retornar 404 al intentar restaurar una canción que no está en la papelera', async () => {
+      // Intentamos restaurar la canción 1 (que sabemos que está activa y NO en la papelera)
+      const res = await request(app).patch('/api/songs/1/restore').set('Authorization', `Bearer ${tokenAdmin}`);
+      expect(res.status).toBe(404);
+    });
+
+    it('Debería permitir al Admin restaurar una canción eliminada (200)', async () => {
+      const res = await request(app).patch(`/api/songs/${deletedSongId}/restore`).set('Authorization', `Bearer ${tokenAdmin}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Canción restaurada exitosamente');
+    });
+
+    it('Debería retornar 500 al fallar getDeletedSongs', async () => {
+      const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
+      const res = await request(app).get('/api/songs/deleted').set('Authorization', `Bearer ${tokenAdmin}`);
+      expect(res.status).toBe(500);
+      querySpy.mockRestore();
+    });
+
+    it('Debería retornar 500 al fallar restoreSong', async () => {
+      const connectSpy = (jest.spyOn(pool, 'connect') as jest.Mock).mockRejectedValueOnce(new Error('Fallo DB'));
+      const res = await request(app).patch('/api/songs/999/restore').set('Authorization', `Bearer ${tokenAdmin}`);
+      expect(res.status).toBe(500);
+      connectSpy.mockRestore();
     });
   });
 });
