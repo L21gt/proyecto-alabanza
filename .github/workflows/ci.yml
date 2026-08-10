@@ -46,12 +46,17 @@ jobs:
       - name: 📦 Instalar dependencias
         run: npm ci
 
-      - name: 🗄️ Estructurar Base de Datos de Prueba
+      - name: 🗄️ Estructurar Base de Datos de Prueba (Esquema Base)
         env:
           PGPASSWORD: adminpassword
         run: |
           sudo apt-get install -y postgresql-client
           psql -h localhost -U admin -d alabanza_db_test -f ${{ github.workspace }}/database/init.sql
+
+      - name: 🔄 Ejecutar Migraciones Automatizadas
+        env:
+          DATABASE_URL: postgresql://admin:adminpassword@localhost:5432/alabanza_db_test
+        run: npm run migrate:prod
 
       - name: 🧪 Ejecutar Pruebas y Validar Cobertura (>80%)
         env:
