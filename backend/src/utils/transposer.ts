@@ -19,9 +19,6 @@ const FLATS_TO_SHARPS: Record<string, string> = {
  * @returns El nuevo acorde transpuesto
  */
 export const transposeChord = (chord: string, semitones: number): string => {
-  // Si el token es un separador explícito, lo devolvemos intacto
-  if (chord === '-' || chord === '/') return chord;
-
   // Regex: 
   // Grupo 1: Captura la nota raíz de la A a la G, seguida opcionalmente de un # o b
   // Grupo 2: Captura todo lo demás (m, 7, maj7, sus4, m7b5, 7#9, add9, etc.)
@@ -54,14 +51,9 @@ export const transposeChord = (chord: string, semitones: number): string => {
   return CHROMATIC_SCALE[newIndex] + modifier;
 };
 
-// Patrón robusto para acordes simples y compuestos (soporta alteraciones modernas como m7b5, 7#9, maj7#11, add9, etc.)
-const CHORD_PATTERN = '[A-G][#b]?(?:m|maj|min|M|sus|dim|aug|add|alt|[0-9]|#|b|\\+|°|∆|\\(|\\))*';
-
-// Regex estricta para identificar líneas completas de acordes (acordes simples, slash chords D/F# o guiones C-Am)
-const STRICT_CHORD_REGEX = new RegExp(`^(${CHORD_PATTERN})([\\/\\-]${CHORD_PATTERN})*$|^-$`);
-
-// Regex para marcadores comunes de partitura/cifrado que pueden acompañar una línea de acordes sin invalidarla
-const CHART_MARKER_REGEX = /^(\([0-9]+x\)|\(x[0-9]+\)|\(Bis\)|\(bis\)|\|+|%|N\.C\.|[xX][0-9]+|[0-9]+[xX])$/i;
+// Regex avanzada para encontrar acordes individuales incrustados en una línea.
+// CORRECCIÓN: Se envuelve el bloque de modificadores en un grupo global `((?:...)*)` para capturarlo completo.
+const CHORD_SEARCH_REGEX = /(^|[\s\/\-\(\)])([A-G][#b]?)((?:m|maj|min|M|sus|dim|aug|add|alt|[0-9]|#|b|\+|°|∆)*)(?=[\s\/\-\(\)xX]|$)/g;
 
 /**
  * Transpone el bloque completo de texto de una canción preservando espacios y alineación.
@@ -73,35 +65,29 @@ export const transposeSongContent = (content: string, semitones: number): string
   const lines = content.split(/(?:\r?\n|\\n)/);
 
   const transposedLines = lines.map(line => {
-    // Extraemos las palabras quitando espacios para analizar si es una línea musical
-    const words = line.trim().split(/\s+/);
-    if (words.length === 0 || words[0] === '') return line;
+    const trimmed = line.trim();
+    if (!trimmed) return line;
 
-    // Una línea se considera de acordes si cada palabra es un acorde válido O un marcador de partitura
-    const isChordLine = words.every(word => 
-      STRICT_CHORD_REGEX.test(word) || CHART_MARKER_REGEX.test(word)
-    );
+    // 1. EVALUACIÓN INTELIGENTE: ¿Es una línea de acordes o de letra?
+    // Extraemos todos los acordes válidos de la línea
+    const cleanedOfChords = trimmed.replace(CHORD_SEARCH_REGEX, '');
+    
+    // Extraemos todos los símbolos musicales y espacios sobrantes
+    const withoutSymbols = cleanedOfChords.replace(/[\s\/\-\(\)xX\d\|%N\.C\.]/gi, '');
+    
+    // Si después de quitar los acordes y conectores queda menos del 30% del texto, ES una línea musical.
+    const isChordLine = withoutSymbols.length < (trimmed.length * 0.3);
 
     if (isChordLine) {
-      // Separamos conservando los espacios originales para no arruinar la alineación sobre la letra
-      const tokens = line.split(/(\s+)/);
-      
-      return tokens.map(token => {
-        const trimmed = token.trim();
-        if (trimmed === '') return token;
-        
-        // Si el token es un marcador de estructura de partitura (ej. (2x), |, N.C.), se devuelve intacto
-        if (CHART_MARKER_REGEX.test(trimmed)) return token;
-
-        // Dividimos el token internamente conservando los símbolos / y - como elementos del arreglo
-        const subTokens = token.split(/([/\-])/);
-        
-        // Transponemos cada fragmento musical y volvemos a unir con los separadores intactos
-        return subTokens.map(sub => transposeChord(sub, semitones)).join('');
-      }).join('');
+      // 2. TRANSPOSICIÓN ROBUSTA: Transponemos al vuelo preservando estrictamente la separación
+      return line.replace(CHORD_SEARCH_REGEX, (match, prefix, root, modifier) => {
+        const chord = root + (modifier || '');
+        const transposed = transposeChord(chord, semitones);
+        return prefix + transposed;
+      });
     }
 
-    // Si la línea tiene palabras que no son acordes (la letra del himno), la devolvemos intacta
+    // Si la línea no pasó la prueba, es la letra de la canción y se devuelve intacta
     return line;
   });
 
