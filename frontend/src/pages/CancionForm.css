@@ -112,19 +112,20 @@ textarea {
 }
 
 .btn-secondary {
-  background-color: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color, #334155);
+  background-color: #f1f3f5;
+  color: #343a40; /* Letra gris oscuro/casi negra para contraste perfecto */
+  border: 1px solid #ced4da; /* Borde sutil para darle forma */
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
+  background-color: #e2e6ea;
+  color: #212529; /* Aún más oscuro al hacer hover */
 }
 
 .error-banner {
@@ -174,4 +175,26 @@ textarea {
 
 .btn-cancel:hover:not(:disabled) {
   background-color: #475569;
+}
+
+/* Estilos para el contador de etiquetas */
+.themes-counter {
+  font-size: 0.85rem;
+  margin-top: 5px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.text-muted {
+  color: #6c757d; /* Gris sutil */
+}
+
+.text-danger {
+  color: #dc3545; /* Rojo de alerta */
+}
+
+.input-error {
+  border-color: #dc3545 !important;
+  /* Usamos RGBA para que se adapte al modo oscuro (fondo oscuro + tinte rojo) o modo claro (fondo blanco + tinte rojo) */
+  background-color: rgba(220, 53, 69, 0.1) !important;
 }

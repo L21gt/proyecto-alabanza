@@ -19,6 +19,12 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
+  // SPRINT 4: Validación estricta de seguridad para límite de etiquetas
+  if (themes && Array.isArray(themes) && themes.length > 10) {
+    res.status(400).json({ error: 'Se permite un máximo de 10 etiquetas por canción' });
+    return;
+  }
+
   // FLUJO EDITORIAL: Si el Admin solicita expresamente guardar como 'Borrador', se respeta;
   // de lo contrario, Admin publica como 'Aprobado' y un Usuario estándar siempre entra como 'Pendiente'.
   let initialStatus = req.user?.role === 'Admin' ? 'Aprobado' : 'Pendiente';
@@ -50,7 +56,9 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
 
     // LÓGICA DE TEMAS (ETIQUETAS)
     if (themes && Array.isArray(themes) && themes.length > 0) {
-      for (const themeName of themes) {
+      // Tomamos solo las primeras 10 por seguridad extra, aunque ya bloqueamos arriba
+      const safeThemes = themes.slice(0, 10);
+      for (const themeName of safeThemes) {
         const normalizedTheme = themeName.trim().toLowerCase();
         let themeId: number;
 
@@ -224,6 +232,12 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
+  // SPRINT 4: Validación estricta de seguridad para límite de etiquetas
+  if (themes && Array.isArray(themes) && themes.length > 10) {
+    res.status(400).json({ error: 'Se permite un máximo de 10 etiquetas por canción' });
+    return;
+  }
+
   const client = await pool.connect();
 
   try {
@@ -272,7 +286,8 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
     await client.query('DELETE FROM song_themes WHERE song_id = $1', [id]);
 
     if (themes && Array.isArray(themes) && themes.length > 0) {
-      for (const themeName of themes) {
+      const safeThemes = themes.slice(0, 10);
+      for (const themeName of safeThemes) {
         const normalizedTheme = themeName.trim().toLowerCase();
         let themeId: number;
 

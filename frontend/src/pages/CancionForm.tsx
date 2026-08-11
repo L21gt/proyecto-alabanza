@@ -27,6 +27,14 @@ const CancionForm: React.FC = () => {
     content: ''
   });
 
+  // Calculamos en tiempo real la cantidad de etiquetas válidas (sin contar espacios vacíos)
+  const currentThemesCount = formData.themes
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0).length;
+    
+  const isThemesExceeded = currentThemesCount > 10;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -37,6 +45,13 @@ const CancionForm: React.FC = () => {
   // Guardado flexible: permite especificar si se publica de inmediato o si se guarda en estado Borrador
   const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
+    
+    // Validación extra de seguridad por si el botón fue forzado
+    if (isThemesExceeded) {
+      setError('Has excedido el límite máximo de 10 etiquetas.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -157,7 +172,20 @@ const CancionForm: React.FC = () => {
 
           <div className="form-group full-width">
             <label htmlFor="themes">Etiquetas / Temas (Opcional)</label>
-            <input type="text" id="themes" name="themes" value={formData.themes} onChange={handleChange} placeholder="Ej. fe, esperanza, cruz (separados por comas)" />
+            <input 
+              type="text" 
+              id="themes" 
+              name="themes" 
+              value={formData.themes} 
+              onChange={handleChange} 
+              placeholder="Ej. fe, esperanza, cruz (separados por comas)"
+              className={isThemesExceeded ? 'input-error' : ''}
+            />
+            {/* Contador dinámico de etiquetas */}
+            <div className={`themes-counter ${isThemesExceeded ? 'text-danger' : 'text-muted'}`}>
+              {currentThemesCount} / 10 etiquetas permitidas
+              {isThemesExceeded && <span> - Has excedido el límite máximo. Elimina algunas para continuar.</span>}
+            </div>
           </div>
 
           <div className="form-group full-width">
@@ -183,19 +211,19 @@ const CancionForm: React.FC = () => {
               Cancelar
             </button>
             
-            {/* BOTÓN OPcIONAL: Visible únicamente para administradores para guardar un borrador en revisión */}
+            {/* BOTÓN OPCIONAL: Visible únicamente para administradores para guardar un borrador en revisión */}
             {role === 'Admin' && (
               <button 
                 type="button" 
                 className="btn-draft" 
-                disabled={loading}
+                disabled={loading || isThemesExceeded}
                 onClick={(e) => handleSave(e, 'Borrador')}
               >
                 {loading ? 'Guardando...' : '💾 Guardar como Borrador'}
               </button>
             )}
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading || isThemesExceeded}>
               {loading ? 'Guardando...' : role === 'Admin' ? '🚀 Publicar Canción' : 'Guardar Canción'}
             </button>
           </div>

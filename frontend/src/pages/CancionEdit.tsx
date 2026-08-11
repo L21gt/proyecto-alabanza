@@ -23,6 +23,14 @@ const CancionEdit: React.FC = () => {
   const [videoLink, setVideoLink] = useState('');
   const [originalStatus, setOriginalStatus] = useState('');
 
+  // Calculamos en tiempo real la cantidad de etiquetas válidas
+  const currentThemesCount = themesInput
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t !== '').length;
+    
+  const isThemesExceeded = currentThemesCount > 10;
+
   useEffect(() => {
     const loadSongData = async () => {
       if (!id) return;
@@ -51,6 +59,13 @@ const CancionEdit: React.FC = () => {
   const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
     if (!id) return;
+    
+    // Validación extra de seguridad
+    if (isThemesExceeded) {
+      setError('Has excedido el límite máximo de 10 etiquetas.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -154,7 +169,17 @@ const CancionEdit: React.FC = () => {
 
           <div className="form-group">
             <label className="form-label">Etiquetas (separadas por coma)</label>
-            <input type="text" className="form-input" value={themesInput} onChange={e => setThemesInput(e.target.value)} />
+            <input 
+              type="text" 
+              className={`form-input ${isThemesExceeded ? 'input-error' : ''}`} 
+              value={themesInput} 
+              onChange={e => setThemesInput(e.target.value)} 
+            />
+            {/* Contador dinámico integrado */}
+            <div className={`themes-counter ${isThemesExceeded ? 'text-danger' : 'text-muted'}`}>
+              {currentThemesCount} / 10 etiquetas permitidas
+              {isThemesExceeded && <span> - Límite excedido.</span>}
+            </div>
           </div>
         </div>
 
@@ -169,7 +194,7 @@ const CancionEdit: React.FC = () => {
           />
         </div>
 
-        <div className="form-group">
+        <div className="form-group full-width">
           <label className="form-label">Letra y Acordes</label>
           <textarea
             className="form-textarea" 
@@ -181,10 +206,10 @@ const CancionEdit: React.FC = () => {
         </div>
 
         <div className="form-actions">
-          {/* Se sustituyó el estilo inline por una clase CSS dedicada (.btn-cancel) */}
+          {/* Usamos btn-secondary que es el estándar del otro formulario */}
           <button 
             type="button" 
-            className="btn-cancel" 
+            className="btn-secondary" 
             onClick={() => navigate(-1)}
             disabled={isLoading}
           >
@@ -196,14 +221,14 @@ const CancionEdit: React.FC = () => {
             <button 
               type="button" 
               className="btn-draft" 
-              disabled={isLoading}
+              disabled={isLoading || isThemesExceeded}
               onClick={(e) => handleSave(e, 'Borrador')}
             >
               {isLoading ? 'Guardando...' : '💾 Guardar como Borrador'}
             </button>
           )}
 
-          <button type="submit" className="btn-primary" disabled={isLoading}>
+          <button type="submit" className="btn-primary" disabled={isLoading || isThemesExceeded}>
             {isLoading ? 'Guardando...' : 'Guardar Cambios y Publicar'}
           </button>
         </div>
