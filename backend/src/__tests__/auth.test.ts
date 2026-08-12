@@ -16,7 +16,7 @@ afterAll(async () => {
   // Limpieza profunda al finalizar para no contaminar a song.test.ts o setlists.test.ts
   await pool.query('TRUNCATE TABLE setlist_songs, setlists, users CASCADE');
   await pool.end();
-});
+}, 15000);
 
 // ==========================================
 // MÓDULO 1: REGISTRO (ONBOARDING)

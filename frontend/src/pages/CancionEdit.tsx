@@ -150,7 +150,18 @@ const CancionEdit: React.FC = () => {
 
           <div className="form-group">
             <label className="form-label">Tonalidad Original</label>
-            <input type="text" className="form-input" required value={originalKey} onChange={e => setOriginalKey(e.target.value)} />
+            <select className="form-input" required value={originalKey} onChange={e => setOriginalKey(e.target.value)}>
+              <optgroup label="Mayores">
+                {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
+                  <option key={key} value={key}>{key}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Menores">
+                {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(key => (
+                  <option key={key} value={key}>{key}</option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
           <div className="form-group">

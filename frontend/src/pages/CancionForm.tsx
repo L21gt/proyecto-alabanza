@@ -150,9 +150,16 @@ const CancionForm: React.FC = () => {
             <div className="form-group">
               <label htmlFor="original_key">Tonalidad Original *</label>
               <select id="original_key" name="original_key" value={formData.original_key} onChange={handleChange}>
-                {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
-                  <option key={key} value={key}>{key}</option>
-                ))}
+                <optgroup label="Mayores">
+                  {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Menores">
+                  {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(key => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
