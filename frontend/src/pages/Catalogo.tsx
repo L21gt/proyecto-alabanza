@@ -9,10 +9,10 @@ const Catalogo: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Estados de Filtros y Búsqueda
+  // Estados de Filtros y Búsqueda (Se agrega 'author')
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [filters, setFilters] = useState({ category: '', original_key: '' });
+  const [filters, setFilters] = useState({ category: '', original_key: '', author: '' });
   
   // Estado de Paginación
   const [page, setPage] = useState(1);
@@ -29,17 +29,17 @@ const Catalogo: React.FC = () => {
     navigate('/login');
   }, [navigate]);
 
-  // Manejo de retraso (debounce) para optimizar peticiones de búsqueda
+  // Manejo de retraso (debounce) para optimizar peticiones de búsqueda principal e input de autor
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setPage(1);
     }, 500);
     return () => clearTimeout(timerId);
-  }, [searchTerm]);
+  }, [searchTerm, filters.author]);
 
-  // Actualización de estado al modificar filtros de categoría o tonalidad
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // Actualización de estado al modificar filtros (ahora soporta inputs y selects)
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
     setPage(1);
@@ -54,9 +54,10 @@ const Catalogo: React.FC = () => {
         const queryFilters: SongFilters = {
           search: debouncedSearchTerm,
           category: filters.category,
+          author: filters.author, // Se inyecta el nuevo filtro de autor
           original_key: filters.original_key,
           page: page,
-          limit: 24 // Aumentado a 24 para optimizar la vista de lista compacta
+          limit: 24
         };
         
         const data = await getSongs(queryFilters);
@@ -80,7 +81,7 @@ const Catalogo: React.FC = () => {
     };
 
     fetchSongs();
-  }, [debouncedSearchTerm, filters, page, handleLogout]);
+  }, [debouncedSearchTerm, filters.category, filters.original_key, filters.author, page, handleLogout]);
 
   return (
     <div className="catalogo-container">
@@ -95,14 +96,27 @@ const Catalogo: React.FC = () => {
         {/* Panel lateral de filtrado avanzado */}
         <aside className="filters-sidebar">
           <h3>Filtros</h3>
+          
           <div className="filter-group">
-            <label>Buscar</label>
+            <label>Búsqueda General</label>
             <input
               type="text"
               className="search-input"
-              placeholder="Títulos o Autores..."
+              placeholder="Títulos o Temas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>Autor / Artista</label>
+            <input
+              type="text"
+              name="author"
+              className="search-input"
+              placeholder="Ej. Marcos Witt..."
+              value={filters.author}
+              onChange={handleFilterChange}
             />
           </div>
           
@@ -119,18 +133,16 @@ const Catalogo: React.FC = () => {
             <label>Tonalidad</label>
             <select name="original_key" value={filters.original_key} onChange={handleFilterChange}>
               <option value="">Cualquiera</option>
-              <option value="C">C</option>
-              <option value="C#">C#</option>
-              <option value="D">D</option>
-              <option value="D#">D#</option>
-              <option value="E">E</option>
-              <option value="F">F</option>
-              <option value="F#">F#</option>
-              <option value="G">G</option>
-              <option value="G#">G#</option>
-              <option value="A">A</option>
-              <option value="A#">A#</option>
-              <option value="B">B</option>
+              <optgroup label="Mayores">
+                {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
+                  <option key={key} value={key}>{key}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Menores">
+                {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(key => (
+                  <option key={key} value={key}>{key}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
         </aside>

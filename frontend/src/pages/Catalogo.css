@@ -392,8 +392,20 @@
    ========================================================================== */
 @media (max-width: 768px) {
   .songs-list-header {
-    display: none; /* Ocultamos la cabecera tabular en pantallas pequeñas */
-  }
+  display: grid;
+  grid-template-columns: 2fr 100px 120px 80px;
+  padding: 0.75rem 1.25rem;
+  
+  /* Se eliminó el rgba oscuro forzado. Ahora usa el fondo y texto del tema actual */
+  background-color: var(--bg-primary); 
+  border-bottom: 2px solid var(--border-color, #334155);
+  color: var(--text-primary); 
+  
+  font-size: 0.85rem;
+  font-weight: 700; /* Aumentado a bold para mejor legibilidad */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
   .song-list-item {
     grid-template-columns: 1fr;

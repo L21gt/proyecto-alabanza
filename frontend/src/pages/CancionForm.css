@@ -198,3 +198,19 @@ textarea {
   /* Usamos RGBA para que se adapte al modo oscuro (fondo oscuro + tinte rojo) o modo claro (fondo blanco + tinte rojo) */
   background-color: rgba(220, 53, 69, 0.1) !important;
 }
+
+/* ==========================================================================
+   Adaptación Responsiva para Botones en Móviles
+   ========================================================================== */
+@media (max-width: 600px) {
+  .form-actions {
+    flex-direction: column-reverse; /* El botón principal queda arriba en móviles */
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .form-actions button {
+    width: 100%;
+    margin: 0;
+  }
+}
