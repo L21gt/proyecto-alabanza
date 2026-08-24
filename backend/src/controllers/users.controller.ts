@@ -35,6 +35,34 @@ export const getPendingUsers = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
+// ============================================
+// NUEVO: OBTENER TODOS LOS USUARIOS (DASHBOARD)
+// ============================================
+export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+  if (req.user?.role !== 'Admin') {
+    res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de Administrador.' });
+    return;
+  }
+
+  try {
+    // Excluimos datos sensibles como password_hash y tokens
+    const query = `
+      SELECT id, name, email, phone, area, role, status, birth_date, created_at 
+      FROM users 
+      ORDER BY created_at DESC
+    `;
+    const result = await pool.query(query);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener la lista completa de usuarios:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// ============================================
+// ACTUALIZADO: CAMBIAR ESTADO (APROBAR / BLOQUEAR)
+// ============================================
 export const updateUserStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   if (req.user?.role !== 'Admin') {
     res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de Administrador.' });
@@ -44,9 +72,9 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
   const { id } = req.params;
   const { status } = req.body;
 
-  // Validación de seguridad para evitar inyección de estados inválidos
-  if (status !== 'Aprobado' && status !== 'Rechazado') {
-    res.status(400).json({ error: 'El estado proporcionado no es válido. Debe ser Aprobado o Rechazado.' });
+  // Validación de seguridad contra el ENUM de la base de datos (user_status)
+  if (status !== 'Aprobado' && status !== 'Rechazado' && status !== 'Pendiente') {
+    res.status(400).json({ error: 'El estado proporcionado no es válido.' });
     return;
   }
 
@@ -71,5 +99,47 @@ export const updateUserStatus = async (req: AuthRequest, res: Response): Promise
   } catch (error) {
     console.error('Error al actualizar estado del usuario:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// ============================================
+// NUEVO: CAMBIAR ROL (ADMINISTRADOR / USUARIO)
+// ============================================
+export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  if (req.user?.role !== 'Admin') {
+    res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de Administrador.' });
+    return;
+  }
+
+  const { id } = req.params;
+  const { role } = req.body;
+
+  // Validación de seguridad contra el ENUM de la base de datos (user_role)
+  if (role !== 'Admin' && role !== 'Usuario') {
+    res.status(400).json({ error: 'Rol inválido. Debe ser Admin o Usuario.' });
+    return;
+  }
+
+  try {
+    const query = `
+      UPDATE users 
+      SET role = $1 
+      WHERE id = $2 
+      RETURNING id, name, email, role
+    `;
+    const result = await pool.query(query, [role, id]);
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Usuario no encontrado' });
+      return;
+    }
+
+    res.status(200).json({ 
+      message: `El rol ha sido actualizado a ${role} exitosamente`, 
+      user: result.rows[0] 
+    });
+  } catch (error) {
+    console.error('Error al actualizar rol del usuario:', error);
+    res.status(500).json({ error: 'Error interno del servidor al actualizar el rol' });
   }
 };

@@ -50,16 +50,16 @@ beforeAll(async () => {
 });
 
 afterEach(() => {
-    // Restaura TODOS los mocks después de cada prueba
-    jest.restoreAllMocks(); 
-  });
+  // Restaura TODOS los mocks después de cada prueba
+  jest.restoreAllMocks(); 
+});
 
 afterAll(async () => {
   // Limpieza final de los datos de prueba
   await pool.query("DELETE FROM users WHERE email LIKE '%@userstest.com'");
 
-    // Cerramos la conexión a la base de datos para evitar que Jest se quede colgado
-    await pool.end();
+  // Cerramos la conexión a la base de datos para evitar que Jest se quede colgado
+  await pool.end();
 });
 
 describe('Módulo de Usuarios (Dashboard Admin)', () => {
@@ -91,7 +91,41 @@ describe('Módulo de Usuarios (Dashboard Admin)', () => {
         .set('Authorization', `Bearer ${adminToken}`);
       
       expect(res.status).toBe(500);
-      // querySpy.mockRestore();
+    });
+  });
+
+  // ============================================
+  // NUEVOS TESTS: OBTENER TODOS LOS USUARIOS
+  // ============================================
+  describe('GET /api/users', () => {
+    it('Debería denegar acceso si el usuario no es Admin (403)', async () => {
+      const res = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${normalToken}`);
+      
+      expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('Debería retornar la lista completa de usuarios al Admin (200)', async () => {
+      const res = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`);
+      
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBeTruthy();
+      // Ya insertamos al menos 4 usuarios en el beforeAll
+      expect(res.body.length).toBeGreaterThanOrEqual(4); 
+    });
+
+    it('Debería retornar 500 en caso de error de base de datos al listar todos', async () => {
+      const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+      const res = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`);
+      
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Error interno del servidor');
     });
   });
 
@@ -152,7 +186,60 @@ describe('Módulo de Usuarios (Dashboard Admin)', () => {
         .send({ status: 'Aprobado' });
       
       expect(res.status).toBe(500);
-      // querySpy.mockRestore();
+    });
+  });
+
+  // ============================================
+  // NUEVOS TESTS: CAMBIAR ROL DE USUARIO
+  // ============================================
+  describe('PATCH /api/users/:id/role', () => {
+    it('Debería denegar acceso si el usuario no es Admin (403)', async () => {
+      const res = await request(app)
+        .patch(`/api/users/${pendingUserId1}/role`)
+        .set('Authorization', `Bearer ${normalToken}`)
+        .send({ role: 'Admin' });
+      
+      expect(res.status).toBe(403);
+    });
+
+    it('Debería retornar 400 si el rol enviado es inválido', async () => {
+      const res = await request(app)
+        .patch(`/api/users/${pendingUserId1}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'SuperUser' }); 
+      
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Rol inválido. Debe ser Admin o Usuario.');
+    });
+
+    it('Debería cambiar el rol a Admin (200)', async () => {
+      const res = await request(app)
+        .patch(`/api/users/${pendingUserId1}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'Admin' });
+      
+      expect(res.status).toBe(200);
+      expect(res.body.user).toHaveProperty('role', 'Admin');
+    });
+
+    it('Debería retornar 404 si el usuario a cambiar de rol no existe', async () => {
+      const res = await request(app)
+        .patch(`/api/users/999999/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'Admin' });
+      
+      expect(res.status).toBe(404);
+    });
+
+    it('Debería retornar 500 en caso de error de base de datos al actualizar rol', async () => {
+      const querySpy = (jest.spyOn(pool, 'query') as jest.Mock).mockRejectedValueOnce(new Error('Fallo simulado DB'));
+      const res = await request(app)
+        .patch(`/api/users/${pendingUserId1}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'Admin' });
+      
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Error interno del servidor al actualizar el rol');
     });
   });
 
