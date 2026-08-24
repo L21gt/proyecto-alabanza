@@ -17,6 +17,7 @@ const AdminDashboard: React.FC = () => {
   const [allAccounts, setAllAccounts] = useState<SystemUser[]>([]); // Nuevo estado para el listado global
   const [songs, setSongs] = useState<PendingSong[]>([]); 
   const [deletedSongs, setDeletedSongs] = useState<DeletedSong[]>([]);
+  const [previewSong, setPreviewSong] = useState<DeletedSong | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -358,6 +359,12 @@ const AdminDashboard: React.FC = () => {
                 <td>{song.deleted_by_name || 'Usuario del Sistema'}</td>
                 <td className="actions-cell">
                   <button 
+                    className="btn-review" 
+                    onClick={() => setPreviewSong(song)}
+                  >
+                    🔍 Ver Letra
+                  </button>
+                  <button 
                     className="btn-approve" 
                     onClick={() => handleRestoreSong(song.id)}
                   >
@@ -422,6 +429,38 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'canciones' && renderSongsTable()}
           {activeTab === 'papelera' && renderDeletedTable()}
         </>
+      )}
+      
+    {/* MODAL DE PREVISUALIZACIÓN DE PAPELERA */}
+      {previewSong && (
+        <div className="modal-overlay" onClick={() => setPreviewSong(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{previewSong.title}</h3>
+              <button className="btn-close" onClick={() => setPreviewSong(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: '1rem', display: 'flex', gap: '1.5rem', fontSize: '0.9rem' }}>
+                <span><strong>Autor:</strong> {previewSong.author}</span>
+                <span><strong>Tonalidad:</strong> <span className="badge-area">{previewSong.original_key}</span></span>
+                <span><strong>Categoría:</strong> {previewSong.category}</span>
+              </div>
+              {/* La etiqueta pre respeta los saltos de línea de la base de datos */}
+              <pre className="song-preview-content">{previewSong.content}</pre>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-reject" onClick={() => setPreviewSong(null)}>
+                Cerrar
+              </button>
+              <button className="btn-approve" onClick={() => {
+                handleRestoreSong(previewSong.id);
+                setPreviewSong(null); // Cerramos el modal tras restaurar
+              }}>
+                Confirmar Restauración
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
