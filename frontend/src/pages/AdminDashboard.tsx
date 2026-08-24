@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPendingUsers, updateUserStatus } from '../services/users.service';
+import { getPendingUsers, getAllUsers, updateUserStatus, updateUserRole } from '../services/users.service';
 import { deleteSong, getPendingSongs, getDeletedSongs, restoreSong } from '../services/songs.service';
-import type { PendingUser } from '../services/users.service';
+import type { PendingUser, SystemUser } from '../services/users.service';
 import type { Song } from '../types';
 import './AdminDashboard.css';
 
@@ -11,14 +11,32 @@ type PendingSong = Song & { status?: string };
 type DeletedSong = Song & { deleted_by_name?: string };
 
 const AdminDashboard: React.FC = () => {
-  // Añadimos 'papelera' como un nuevo estado posible para las pestañas
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'canciones' | 'papelera'>('canciones');
+  // Añadimos 'cuentas' como un nuevo estado posible para las pestañas
+  const [activeTab, setActiveTab] = useState<'solicitudes' | 'cuentas' | 'canciones' | 'papelera'>('canciones');
   const [users, setUsers] = useState<PendingUser[]>([]);
+  const [allAccounts, setAllAccounts] = useState<SystemUser[]>([]); // Nuevo estado para el listado global
   const [songs, setSongs] = useState<PendingSong[]>([]); 
   const [deletedSongs, setDeletedSongs] = useState<DeletedSong[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // SOLUCIÓN INFALIBLE: Extraemos el ID directamente del Token JWT que viene del backend
+  const token = localStorage.getItem('token');
+  let currentUserId: string | null = null;
+  
+  if (token) {
+    try {
+      // El JWT tiene 3 partes separadas por punto. El payload (datos) es la parte del medio [1].
+      const payloadBase64 = token.split('.')[1];
+      // Decodificamos el Base64 nativamente en el navegador
+      const decodedJson = atob(payloadBase64);
+      const payload = JSON.parse(decodedJson);
+      currentUserId = String(payload.id);
+    } catch (e) {
+      console.error("Error al decodificar el token para obtener el ID de usuario", e);
+    }
+  }
 
   // Verificación de seguridad
   useEffect(() => {
@@ -31,14 +49,17 @@ const AdminDashboard: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const usersData = await getPendingUsers();
+      // Optimizamos cargando todo en paralelo
+      const [usersData, accountsData, pendingSongsData, deletedSongsData] = await Promise.all([
+        getPendingUsers(),
+        getAllUsers(),
+        getPendingSongs(),
+        getDeletedSongs()
+      ]);
+      
       setUsers(usersData);
-
-      const pendingSongsData = await getPendingSongs();
+      setAllAccounts(accountsData);
       setSongs(pendingSongsData);
-
-      // Obtenemos los elementos de la papelera
-      const deletedSongsData = await getDeletedSongs();
       setDeletedSongs(deletedSongsData);
 
       setError('');
@@ -55,7 +76,7 @@ const AdminDashboard: React.FC = () => {
   }, [fetchData]);
 
   // ==========================================
-  // MANEJADORES DE ACCIONES
+  // MANEJADORES DE ACCIONES DE USUARIOS
   // ==========================================
 
   const handleUserAction = async (id: number, status: 'Aprobado' | 'Rechazado') => {
@@ -69,6 +90,34 @@ const AdminDashboard: React.FC = () => {
       if (err instanceof Error) alert(err.message);
     }
   };
+
+  const handleRoleChange = async (id: number, currentRole: string) => {
+    const newRole = currentRole === 'Admin' ? 'Usuario' : 'Admin';
+    if (!window.confirm(`¿Estás seguro de que deseas cambiar el rol a ${newRole}?`)) return;
+
+    try {
+      await updateUserRole(id, newRole);
+      await fetchData();
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
+    }
+  };
+
+  const handleBlockUser = async (id: number) => {
+    if (!window.confirm('¿Estás seguro de que deseas SUSPENDER esta cuenta? El usuario perderá acceso al sistema.')) return;
+
+    try {
+      // Reutilizamos el estado 'Rechazado' para revocar acceso
+      await updateUserStatus(id, 'Rechazado');
+      await fetchData();
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
+    }
+  };
+
+  // ==========================================
+  // MANEJADORES DE ACCIONES DE CANCIONES
+  // ==========================================
 
   const handleSongReject = async (id: string | number) => {
     if (!window.confirm('¿Estás seguro de que deseas rechazar y eliminar esta propuesta?')) return;
@@ -136,6 +185,93 @@ const AdminDashboard: React.FC = () => {
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderAccountsTable = () => {
+    if (allAccounts.length === 0) {
+      return (
+        <div className="empty-state">
+          <h3>Sin cuentas</h3>
+          <p>No hay cuentas registradas en el sistema.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="table-responsive">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol Actual</th>
+              <th>Estado</th>
+              <th>Registro</th>
+              <th>Acciones de Seguridad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allAccounts.map((account) => {
+              // Comparamos forzando ambos a String para evitar el error de ===
+              const isCurrentUser = String(account.id) === currentUserId;
+
+              return (
+                <tr key={account.id} style={{ opacity: account.status === 'Rechazado' ? 0.6 : 1 }}>
+                  <td>
+                    <strong>{account.name}</strong>
+                    <br />
+                    <span className="text-muted">{account.email}</span>
+                  </td>
+                  <td>
+                    <span className="badge-area" style={{ backgroundColor: account.role === 'Admin' ? 'rgba(234, 179, 8, 0.2)' : '', color: account.role === 'Admin' ? '#eab308' : '' }}>
+                      {account.role}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ color: account.status === 'Aprobado' ? '#16a34a' : account.status === 'Rechazado' ? '#ef4444' : '#f59e0b', fontWeight: 'bold' }}>
+                      {account.status}
+                    </span>
+                  </td>
+                  <td>{new Date(account.created_at).toLocaleDateString('es-ES')}</td>
+                  <td className="actions-cell">
+                    {isCurrentUser ? (
+                      <span className="text-muted" style={{ fontStyle: 'italic', padding: '0.4rem 0' }}>
+                        Tu cuenta (Protegida)
+                      </span>
+                    ) : (
+                      <>
+                        <button 
+                          className="btn-review" 
+                          onClick={() => handleRoleChange(account.id, account.role)}
+                        >
+                          Hacer {account.role === 'Admin' ? 'Usuario' : 'Admin'}
+                        </button>
+                        
+                        {account.status !== 'Rechazado' && (
+                          <button 
+                            className="btn-reject" 
+                            onClick={() => handleBlockUser(account.id)}
+                          >
+                            Bloquear
+                          </button>
+                        )}
+                        
+                        {account.status === 'Rechazado' && (
+                          <button 
+                            className="btn-approve" 
+                            onClick={() => handleUserAction(account.id, 'Aprobado')}
+                          >
+                            Reactivar
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -244,16 +380,22 @@ const AdminDashboard: React.FC = () => {
             &larr; Volver al Catálogo
           </button>
           <h2 className="dashboard-title">Panel de Administración</h2>
-          <p className="dashboard-subtitle">Gestión de solicitudes y moderación del catálogo</p>
+          <p className="dashboard-subtitle">Gestión de cuentas, roles y moderación del catálogo</p>
         </div>
       </header>
 
       <div className="dashboard-tabs">
         <button 
-          className={`tab-button ${activeTab === 'usuarios' ? 'active' : ''}`}
-          onClick={() => setActiveTab('usuarios')}
+          className={`tab-button ${activeTab === 'solicitudes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('solicitudes')}
         >
-          Usuarios Solicitantes {users.length > 0 && `(${users.length})`}
+          Solicitudes {users.length > 0 && `(${users.length})`}
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'cuentas' ? 'active' : ''}`}
+          onClick={() => setActiveTab('cuentas')}
+        >
+          Cuentas Registradas
         </button>
         <button 
           className={`tab-button ${activeTab === 'canciones' ? 'active' : ''}`}
@@ -275,7 +417,8 @@ const AdminDashboard: React.FC = () => {
         <div className="error-message-container">{error}</div>
       ) : (
         <>
-          {activeTab === 'usuarios' && renderUsersTable()}
+          {activeTab === 'solicitudes' && renderUsersTable()}
+          {activeTab === 'cuentas' && renderAccountsTable()}
           {activeTab === 'canciones' && renderSongsTable()}
           {activeTab === 'papelera' && renderDeletedTable()}
         </>
