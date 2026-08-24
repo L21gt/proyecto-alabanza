@@ -1,18 +1,25 @@
 .global-header {
   position: sticky;
   top: 0;
-  z-index: 1000; /* Obliga al menú a estar por encima de CUALQUIER otra página */
+  z-index: 1000;
   width: 100%;
   box-sizing: border-box;
+  background-color: var(--bg-secondary, #1e293b);
+  border-bottom: 1px solid var(--border-color, #334155);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
   
-  /* Flexbox original */
+  /* Flexbox base para desktop */
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: var(--bg-secondary, #1e293b);
-  border-bottom: 1px solid var(--border-color, #334155);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+}
+
+.header-brand-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: auto;
 }
 
 .brand-link {
@@ -20,6 +27,24 @@
   font-weight: bold;
   color: var(--text-primary, #f8fafc);
   text-decoration: none;
+}
+
+.mobile-toggle {
+  display: none; /* Oculto en escritorio */
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #f8fafc);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  margin-left: 2rem;
 }
 
 .header-nav {
@@ -102,10 +127,67 @@
   font-size: 1rem;
   transition: all 0.2s;
   padding: 0;
-  margin-right: 0.5rem;
 }
 
 .btn-theme-toggle:hover {
   background-color: rgba(255, 255, 255, 0.05);
   transform: scale(1.1);
+}
+
+/* ==========================================================================
+   Responsive: Modo Móvil / Tableta (< 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .global-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+  
+  .header-brand-container {
+    width: 100%;
+  }
+  
+  .mobile-toggle {
+    display: block; /* Mostramos el botón hamburguesa */
+  }
+  
+  .header-content {
+    display: none; /* Ocultamos el menú por defecto */
+    flex-direction: column;
+    margin-left: 0;
+    margin-top: 1rem;
+    gap: 1.5rem;
+    width: 100%;
+  }
+  
+  /* Se muestra el menú cuando el estado de React activa esta clase */
+  .header-content.is-open {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .header-nav {
+    flex-direction: column;
+    width: 100%;
+    text-align: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color, #334155);
+  }
+  
+  .header-user-info {
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+  }
+  
+  .btn-header-admin, .btn-logout {
+    width: 100%; /* Botones más accesibles para tocar en móvil */
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
