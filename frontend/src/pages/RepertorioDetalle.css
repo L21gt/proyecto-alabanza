@@ -327,3 +327,35 @@
   color: var(--accent-color, #3b82f6);
   text-decoration: underline;
 }
+
+/* Contenedor de controles de la canción (meta) */
+.rd-meta-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Estilo base para los selectores de Categoría y Tono */
+.rd-select-meta {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: var(--bg-secondary, #f1f5f9);
+  color: var(--text-primary, #1e293b);
+  border: 1px solid var(--border-color, #cbd5e1);
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Resaltado rojo cuando falta asignar el momento del servicio */
+.rd-select-unassigned {
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+/* Adaptación para modo oscuro si tienes las variables configuradas */
+[data-theme='dark'] .rd-select-meta {
+  background-color: var(--bg-secondary, #334155);
+  color: var(--text-primary, #f8fafc);
+  border-color: var(--border-color, #475569);
+}

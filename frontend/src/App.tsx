@@ -10,6 +10,7 @@ import RepertorioDetalle from './pages/RepertorioDetalle';
 import AdminDashboard from './pages/AdminDashboard';
 import Header from './components/Header'; // <-- Importamos el Header global
 import './index.css';
+import Presentacion from './pages/Presentacion';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -42,6 +43,7 @@ function App() {
             <Route path="/cancion/nueva" element={<CancionForm />} />
             <Route path="/cancion/:id/editar" element={<CancionEdit />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/repertorios/:id/presentacion" element={<Presentacion />} />
           </Routes>
         </main>
       </div>

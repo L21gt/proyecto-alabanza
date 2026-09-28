@@ -45,5 +45,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: alabanza-db-backup-${{ github.run_id }}
-          path: ${{ env.BACKUP_FILE }}
-          retention-days: 90 # El límite máximo de almacenamiento gratuito
+          path: backup_*.sql.gz # Usamos un comodín para evitar el error del linter de VS Code
+          retention-days: 90

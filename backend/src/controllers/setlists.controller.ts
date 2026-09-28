@@ -52,7 +52,7 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
 
     // Join query to retrieve songs data along with their specific setlist attributes
     const songsRes = await pool.query(`
-      SELECT ss.song_id, ss.transposed_key, ss.sort_order, s.title, s.author, s.original_key, s.tempo, s.status 
+      SELECT ss.song_id, ss.transposed_key, ss.sort_order, ss.group_name, s.title, s.author, s.original_key, s.tempo, s.status 
       FROM setlist_songs ss
       JOIN songs s ON ss.song_id = s.id
       WHERE ss.setlist_id = $1
@@ -195,9 +195,9 @@ export const reorderSetlistSongs = async (req: Request, res: Response): Promise<
       for (const song of songs) {
         await client.query(
           `UPDATE setlist_songs 
-           SET sort_order = $1, group_name = $2 
-           WHERE setlist_id = $3 AND song_id = $4`,
-          [song.sort_order, song.group_name || null, id, song.song_id]
+           SET sort_order = $1, group_name = $2, transposed_key = $3 
+           WHERE setlist_id = $4 AND song_id = $5`,
+          [song.sort_order, song.group_name || null, song.transposed_key || null, id, song.song_id]
         );
       }
 

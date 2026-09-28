@@ -71,7 +71,7 @@ export const deleteSetlist = async (id: string | number): Promise<void> => {
   }
 };
 
-export const addSongToSetlist = async (setId: string | number, songData: { song_id: number; transposed_key: string; sort_order: number }): Promise<void> => {
+export const addSongToSetlist = async (setId: string | number, songData: { song_id: number; transposed_key: string; sort_order: number; group_name?: string }): Promise<void> => {
   const response = await fetch(`${API_URL}/${setId}/songs`, {
     method: 'POST',
     headers: {
@@ -104,7 +104,7 @@ export const removeSongFromSetlist = async (setId: string | number, songId: stri
 
 export const updateSetlistOrder = async (
   setId: string | number,
-  songsOrder: { song_id: number; sort_order: number; group_name: string | null }[]
+  songsOrder: { song_id: number; sort_order: number; group_name: string | null; transposed_key?: string | null }[]
 ): Promise<void> => {
   const response = await fetch(`${API_URL}/${setId}/songs/order`, {
     method: 'PUT',
