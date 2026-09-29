@@ -12,6 +12,7 @@ export interface Song {
   status?: string;   // (Opcional, para el flujo editorial)
   created_at?: string;
   updated_at?: string;
+  song_id?: number;
 }
 
 // Interfaz para las canciones cuando están dentro de un repertorio

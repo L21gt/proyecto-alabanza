@@ -1,38 +1,32 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
 import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder } from '../services/setlists.service';
 import { getSongs } from '../services/songs.service';
-import type { Setlist, Song } from '../types';
+import type { Setlist, Song, SetlistSong } from '../types';
 import './RepertorioDetalle.css';
 
 const MUSICAL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const KANBAN_COLUMNS = ['Sin Asignar', 'Alabanza', 'Adoración', 'Ofrendas', 'Santa Cena'];
 
 const RepertorioDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Estados del Repertorio (Zona Inferior)
   const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Estados del Buscador (Zona Superior)
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
-  // Mapeo para guardar la tonalidad seleccionada de cada canción en los resultados
   const [selectedKeys, setSelectedKeys] = useState<Record<number, string>>({});
-  // Mapeo para guardar la sección/bloque seleccionado
   const [selectedGroups, setSelectedGroups] = useState<Record<number, string>>({});
-
-  // Estados para el Drag & Drop
-  const [dragItemIndex, setDragItemIndex] = useState<number | null>(null);
-  const [dragOverItemIndex, setDragOverItemIndex] = useState<number | null>(null);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
-  // Carga inicial y refresco del Repertorio
   const fetchSetlistDetails = useCallback(async () => {
     if (!id) return;
     try {
@@ -50,15 +44,11 @@ const RepertorioDetalle: React.FC = () => {
     fetchSetlistDetails();
   }, [fetchSetlistDetails]);
 
-  // Manejo del Debounce para el buscador
   useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
+    const timerId = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
     return () => clearTimeout(timerId);
   }, [searchTerm]);
 
-  // Ejecución de la búsqueda
   useEffect(() => {
     const search = async () => {
       if (!debouncedSearchTerm.trim()) {
@@ -69,13 +59,10 @@ const RepertorioDetalle: React.FC = () => {
       try {
         const data = await getSongs(debouncedSearchTerm);
         const results = data.songs || []; 
-        
         setSearchResults(results);
         
         const initialKeys: Record<number, string> = {};
-        results.forEach((song: Song) => {
-          initialKeys[song.id] = song.original_key;
-        });
+        results.forEach((song: Song) => { initialKeys[song.id] = song.original_key; });
         setSelectedKeys(prev => ({ ...prev, ...initialKeys }));
       } catch (err) {
         console.error('Error buscando canciones:', err);
@@ -86,12 +73,9 @@ const RepertorioDetalle: React.FC = () => {
     search();
   }, [debouncedSearchTerm]);
 
-  // Mutaciones
   const handleAddSong = async (song: Song) => {
     if (!setlist || !id) return;
-    
-    // Por defecto, si no selecciona nada, lo asignamos a "Alabanza"
-    const groupName = selectedGroups[song.id] || 'Alabanza';
+    const groupName = selectedGroups[song.id] || undefined;
     const nextOrder = (setlist.songs?.length || 0) + 1;
     const transposedKey = selectedKeys[song.id] || song.original_key;
 
@@ -100,7 +84,7 @@ const RepertorioDetalle: React.FC = () => {
         song_id: song.id,
         transposed_key: transposedKey,
         sort_order: nextOrder,
-        group_name: groupName // Enviamos el bloque al backend
+        group_name: groupName
       });
       setSearchTerm('');
       setSearchResults([]);
@@ -112,7 +96,6 @@ const RepertorioDetalle: React.FC = () => {
 
   const handleRemoveSong = async (songId: number) => {
     if (!id || !window.confirm('¿Seguro que deseas quitar esta canción del repertorio?')) return;
-    
     try {
       await removeSongFromSetlist(id, songId);
       await fetchSetlistDetails();
@@ -121,64 +104,14 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
-  const handleDragStart = (index: number) => {
-    setDragItemIndex(index);
-  };
-
-  const handleDragEnter = (index: number) => {
-    setDragOverItemIndex(index);
-  };
-
-  const handleDragEnd = async () => {
-    if (dragItemIndex === null || dragOverItemIndex === null || dragItemIndex === dragOverItemIndex) {
-      setDragItemIndex(null);
-      setDragOverItemIndex(null);
-      return;
-    }
-
+  // Cambio de Tono en vivo
+  const handleUpdateKey = async (songId: number, newKey: string) => {
     if (!setlist || !setlist.songs || !id) return;
-
     const newSongs = [...setlist.songs];
-    const draggedItem = newSongs[dragItemIndex];
-    newSongs.splice(dragItemIndex, 1);
-    newSongs.splice(dragOverItemIndex, 0, draggedItem);
+    const songIndex = newSongs.findIndex(s => s.song_id === songId);
+    if (songIndex === -1) return;
 
-    setSetlist({ ...setlist, songs: newSongs });
-    setDragItemIndex(null);
-    setDragOverItemIndex(null);
-    setIsUpdatingOrder(true);
-
-    try {
-      const orderPayload = newSongs.map((song, index) => ({
-        song_id: song.song_id,
-        sort_order: index + 1,
-        group_name: song.group_name || null 
-      }));
-
-      await updateSetlistOrder(id, orderPayload);
-    } catch (err) {
-      alert('Error al guardar el nuevo orden en el servidor. Se recargará la lista original.');
-      console.error('Error al actualizar orden:', err);
-      await fetchSetlistDetails();
-    } finally {
-      setIsUpdatingOrder(false);
-    }
-  };
-
-  // FUNCIÓN UNIFICADA: Cambiar grupo o tonalidad en vivo
-  const handleUpdateSongMeta = async (index: number, field: 'group_name' | 'transposed_key', value: string) => {
-    if (!setlist || !setlist.songs || !id) return;
-
-    const newSongs = [...setlist.songs];
-    
-    // Asignación explícita para resolver el error estricto de TypeScript
-    if (field === 'group_name') {
-      newSongs[index].group_name = value === "" ? undefined : value;
-    } else {
-      // Simplemente asignamos el valor directo. Si está vacío será "", lo cual es un string válido.
-      newSongs[index].transposed_key = value;
-    }
-    
+    newSongs[songIndex].transposed_key = newKey;
     setSetlist({ ...setlist, songs: newSongs });
     setIsUpdatingOrder(true);
 
@@ -189,60 +122,107 @@ const RepertorioDetalle: React.FC = () => {
         group_name: song.group_name || null,
         transposed_key: song.transposed_key || null
       }));
-
       await updateSetlistOrder(id, orderPayload);
     } catch (err) {
-      // Usamos la variable 'err' para limpiar la advertencia de ESLint
-      console.error('Error de red o base de datos al actualizar:', err);
-      alert('Error al guardar el cambio.');
+      console.error('Error al actualizar tono:', err);
+      alert('Error al actualizar tono.');
       await fetchSetlistDetails(); 
     } finally {
       setIsUpdatingOrder(false);
     }
   };
-  
+
+  // Motor del Tablero Kanban (Pangea DND)
+  const onDragEnd = async (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    if (!setlist || !setlist.songs || !id) return;
+
+    setIsUpdatingOrder(true);
+
+    // 1. Agrupamos las canciones actuales lógicamente por columna
+    const getSongsByCol = (col: string) => 
+      setlist.songs!.filter(s => col === 'Sin Asignar' ? !s.group_name : s.group_name === col);
+
+    // INYECTAMOS UN TIPO SEGURO PARA CONTENTAR A TYPESCRIPT
+    type SetlistSongType = NonNullable<Setlist['songs']>[number];
+
+    const columnsData = KANBAN_COLUMNS.reduce((acc, col) => {
+      acc[col] = getSongsByCol(col);
+      return acc;
+    }, {} as Record<string, SetlistSongType[]>); // <-- Usamos el tipo exacto en lugar de any[]
+
+    // 2. Extraemos la canción movida de la columna de origen
+    const sourceCol = [...columnsData[source.droppableId]];
+    const [movedSong] = sourceCol.splice(source.index, 1);
+
+    // 3. Modificamos su grupo (si se movió a Sin Asignar, es null/undefined)
+    movedSong.group_name = destination.droppableId === 'Sin Asignar' ? undefined : destination.droppableId;
+
+    // 4. Insertamos la canción en la columna de destino
+    const destCol = source.droppableId === destination.droppableId ? sourceCol : [...columnsData[destination.droppableId]];
+    destCol.splice(destination.index, 0, movedSong);
+
+    // Actualizamos nuestro mapa temporal
+    columnsData[source.droppableId] = sourceCol;
+    columnsData[destination.droppableId] = destCol;
+
+    // 5. Aplanamos todas las columnas en un solo arreglo para reconstruir el sort_order general
+    const flatNewSongs = KANBAN_COLUMNS.flatMap(col => columnsData[col]);
+    setSetlist({ ...setlist, songs: flatNewSongs });
+
+    // 6. Enviamos el nuevo orden al servidor
+    try {
+      const orderPayload = flatNewSongs.map((song, i) => ({
+        song_id: song.song_id,
+        sort_order: i + 1,
+        group_name: song.group_name || null,
+        transposed_key: song.transposed_key || null
+      }));
+      await updateSetlistOrder(id, orderPayload);
+    } catch (err) {
+      console.error('Error al guardar el nuevo orden:', err);
+      alert('Error al guardar el nuevo orden.');
+      await fetchSetlistDetails();
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
+
   if (loading) return <div className="loading-container">Cargando detalles...</div>;
   if (error) return <div className="error-message-container">{error}</div>;
   if (!setlist) return <div className="error-message-container">Repertorio no encontrado</div>;
 
   return (
     <div className="repertorio-detalle-container">
+      {/* HEADER Y BÚSQUEDA IGUALES A TU VERSIÓN ANTERIOR */}
       <header className="rd-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <button className="btn-back" onClick={() => navigate('/repertorios')}>
-            &larr; Volver a Repertorios
-          </button>
+          <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
           <h2 className="rd-title">{setlist.name}</h2>
-          {setlist.event_date && (
-            <p className="rd-date">
-              {new Date(setlist.event_date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          )}
+          {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
         </div>
 
-        {/* BOTÓN DE INICIAR PRESENTACIÓN CON VALIDACIÓN */}
+        <button 
+            className="btn-secondary" 
+            onClick={() => window.print()}
+            style={{ padding: '0.75rem 1.5rem', fontSize: '1.1rem' }}
+          >
+            🖨️ PDF / Imprimir
+          </button>
+
         <button 
           className="btn-primary" 
           onClick={() => {
-            if (!setlist || !setlist.songs || setlist.songs.length === 0) {
-              alert('Debes agregar canciones al repertorio primero.');
-              return;
-            }
-            
-            // Verificamos qué grupos están presentes en la lista actual
+            if (!setlist.songs || setlist.songs.length === 0) return alert('Debes agregar canciones.');
             const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
-            const missingGroups = [];
+            const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
             
-            if (!groupsPresent.includes('Alabanza')) missingGroups.push('Alabanza');
-            if (!groupsPresent.includes('Adoración')) missingGroups.push('Adoración');
-            if (!groupsPresent.includes('Ofrendas')) missingGroups.push('Ofrendas');
-
-            if (missingGroups.length > 0) {
-              alert(`⚠️ No puedes iniciar la presentación. \n\nFaltan asignar canciones en las siguientes secciones obligatorias:\n- ${missingGroups.join('\n- ')}`);
+            if (missing.length > 0) {
+              alert(`⚠️ Faltan asignar canciones en: ${missing.join(', ')}`);
               return;
             }
-
-            // Si pasa la validación, navegamos al modo lectura
             navigate(`/repertorios/${id}/presentacion`);
           }}
           style={{ padding: '0.75rem 1.5rem', fontSize: '1.1rem', backgroundColor: '#10b981', color: 'white' }}
@@ -253,151 +233,144 @@ const RepertorioDetalle: React.FC = () => {
 
       <section className="rd-search-section">
         <h3>Agregar Canciones</h3>
-        <input
-          type="text"
-          className="rd-search-input"
-          placeholder="Busca en el catálogo para agregar a este servicio..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        
+        <input type="text" className="rd-search-input" placeholder="Busca en el catálogo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         {isSearching && <p className="rd-helper-text">Buscando...</p>}
-        
         {searchResults.length > 0 && (
           <div className="rd-search-results">
             {searchResults.map(song => (
               <div key={song.id} className="rd-result-card">
-                <div className="rd-result-info">
-                  <strong>{song.title}</strong>
+                <div className="rd-result-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <strong 
+                    className="kanban-song-title-link"
+                    onClick={() => navigate(`/cancion/${song.id}?repertorioId=${id}`)}
+                  >
+                    {song.title}
+                  </strong>
                   <span>{song.author}</span>
                 </div>
-                
                 <div className="rd-result-actions">
-                  <div className="key-selector">
-                    <label>Tonalidad:</label>
-                    <select 
-                      value={selectedKeys[song.id] || song.original_key}
-                      onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}
-                    >
-                      {MUSICAL_KEYS.map(k => (
-                        <option key={k} value={k}>{k}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* INYECTA ESTE BLOQUE NUEVO PARA ELIMINAR EL ERROR */}
-                  <div className="group-selector" style={{ marginLeft: '10px' }}>
-                    <label>Momento:</label>
-                    <select 
-                      value={selectedGroups[song.id] || 'Alabanza'}
-                      onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}
-                    >
-                      <option value="Alabanza">Alabanza</option>
-                      <option value="Adoración">Adoración</option>
-                      <option value="Ofrendas">Ofrendas</option>
-                      <option value="Santa Cena">Santa Cena</option>
-                    </select>
-                  </div>
-
-                  <button className="btn-add" onClick={() => handleAddSong(song)} style={{ marginLeft: '10px' }}>
-                    Añadir
-                  </button>
+                  <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
+                    {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                  <select className="rd-select-meta" style={{ marginLeft: '10px' }} value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
+                    {KANBAN_COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
+                  </select>
+                  <button className="btn-add" onClick={() => handleAddSong(song)} style={{ marginLeft: '10px' }}>Añadir</button>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        <div className="rd-suggest-container">
-          <p className="rd-suggest-text">
-            ¿No encuentras la canción en el catálogo?
-          </p>
-          <button 
-            className="btn-secondary" 
-            onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
-          >
-            + Sugerir y agregar al repertorio
-          </button>
-        </div>
       </section>
 
       <hr className="rd-divider" />
 
-      <section className="rd-list-section">
-        <h3>Lista del Servicio ({setlist.songs?.length || 0})</h3>
+      {/* NUEVO: SECCIÓN KANBAN */}
+      <section className="rd-kanban-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>Tablero de Servicio ({setlist.songs?.length || 0})</h3>
+          {isUpdatingOrder && <span className="rd-helper-text">Guardando cambios...</span>}
+        </div>
         
-        {(!setlist.songs || setlist.songs.length === 0) ? (
-          <p className="rd-empty">No hay canciones asignadas a este repertorio todavía.</p>
-        ) : (
-          <div className="rd-songs-list">
-            {isUpdatingOrder && <p className="rd-helper-text">Guardando nuevo orden...</p>}
-            
-            {setlist.songs.map((song, index) => (
-              <div 
-                key={`${song.song_id}-${index}`} 
-                className={`rd-song-row ${dragItemIndex === index ? 'dragging' : ''} ${dragOverItemIndex === index ? 'drag-over' : ''} ${song.status === 'Pendiente' ? 'song-pending' : ''}`}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragEnter={() => handleDragEnter(index)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                <div className="rd-drag-handle" title="Arrastrar para reordenar">☰</div>
-                
-                <div className="rd-song-number">{index + 1}</div>
-                
-                <div 
-                  className="rd-song-details" 
-                  onClick={() => {
-                    if (song.status === 'Pendiente') {
-                      alert('Esta canción se encuentra en revisión editorial y aún no tiene los acordes disponibles para ensayar.');
-                    } else {
-                      navigate(`/cancion/${song.song_id}?repertorioId=${id}`);
-                    }
-                  }}
-                  title={song.status === 'Pendiente' ? 'Canción en revisión' : 'Haz clic para ver acordes y ensayar'}
-                >
-                  <h4 className="rd-song-title-link">
-                    {song.title} {song.status === 'Pendiente' && <span style={{ color: '#eab308', fontSize: '0.8rem', marginLeft: '8px' }}>(En revisión)</span>}
-                  </h4>
-                  <p>{song.author}</p>
-                </div>
-                
-                <div className="rd-song-meta rd-meta-controls">
-                  {/* Selector de categoría */}
-                  <select 
-                    className={`rd-select-meta ${!song.group_name ? 'rd-select-unassigned' : ''}`}
-                    value={song.group_name || ""} 
-                    onChange={(e) => handleUpdateSongMeta(index, 'group_name', e.target.value)}
-                  >
-                    <option value="">-- Asignar --</option>
-                    <option value="Alabanza">Alabanza</option>
-                    <option value="Adoración">Adoración</option>
-                    <option value="Ofrendas">Ofrendas</option>
-                    <option value="Santa Cena">Santa Cena</option>
-                  </select>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="kanban-board">
+            {KANBAN_COLUMNS.map(columnId => {
+              const columnSongs = setlist.songs?.filter(s => columnId === 'Sin Asignar' ? !s.group_name : s.group_name === columnId) || [];
+              
+              // No mostrar "Sin Asignar" si está vacía, para mantener limpio el tablero
+              if (columnId === 'Sin Asignar' && columnSongs.length === 0) return null;
 
-                  {/* Selector de Tonalidad */}
-                  <select 
-                    className="rd-select-meta"
-                    value={song.transposed_key || song.original_key || ""} 
-                    onChange={(e) => handleUpdateSongMeta(index, 'transposed_key', e.target.value)}
-                  >
-                    {MUSICAL_KEYS.map(k => (
-                      <option key={k} value={k}>{k}</option>
-                    ))}
-                  </select>
-
-                  <span className="rd-tempo">{song.tempo} BPM</span>
+              return (
+                <div key={columnId} className={`kanban-column ${columnId === 'Sin Asignar' ? 'col-unassigned' : ''}`}>
+                  <h4 className="kanban-column-title">{columnId} <span>{columnSongs.length}</span></h4>
+                  
+                  <Droppable droppableId={columnId}>
+                    {(provided, snapshot) => (
+                      <div 
+                        className={`kanban-droppable ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps}
+                      >
+                        {/* Agregamos ": SetlistSong" al parámetro song */}
+                        {columnSongs.map((song: SetlistSong, index: number) => (
+                          <Draggable key={String(song.song_id)} draggableId={String(song.song_id)} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`kanban-card ${snapshot.isDragging ? 'is-dragging' : ''} ${song.status === 'Pendiente' ? 'song-pending' : ''}`}
+                              >
+                                <div className="kanban-card-header">
+                                  {/* Ya no usamos "any", TypeScript ahora sabe que es válido */}
+                                  <strong 
+                                    className="kanban-song-title-link"
+                                    onClick={() => navigate(`/cancion/${song.song_id}?repertorioId=${id}`)}
+                                  >
+                                    {song.title}
+                                  </strong>
+                                  <button onClick={() => handleRemoveSong(song.song_id)} className="btn-remove-card">&times;</button>
+                                </div>
+                                <p className="kanban-card-author">{song.author}</p>
+                                
+                                <div className="kanban-card-footer">
+                                  <select 
+                                    className="rd-select-meta kanban-select"
+                                    value={song.transposed_key || song.original_key || ""} 
+                                    onChange={(e) => handleUpdateKey(song.song_id, e.target.value)}
+                                  >
+                                    {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                                  </select>
+                                  <span className="rd-tempo">{song.tempo} BPM</span>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
-                <div className="rd-song-remove">
-                  <button onClick={() => handleRemoveSong(song.song_id)} title="Quitar del setlist">&times;</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        )}
+        </DragDropContext>
       </section>
+
+      {/* =========================================
+          PLANTILLA OCULTA PARA IMPRESIÓN / PDF
+      ========================================= */}
+      <div className="printable-setlist-pdf">
+        <div className="pdf-header">
+          <h1>{setlist.name}</h1>
+          <div className="pdf-date">
+            {setlist.event_date ? new Date(setlist.event_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin fecha'}
+          </div>
+        </div>
+
+        <div className="pdf-body">
+          {['Alabanza', 'Adoración', 'Ofrendas', 'Santa Cena'].map(categoria => {
+            const cancionesEnCategoria = setlist.songs?.filter(s => s.group_name === categoria);
+            
+            if (!cancionesEnCategoria || cancionesEnCategoria.length === 0) return null;
+
+            return (
+              <div key={categoria} className="pdf-category-section">
+                <h2>{categoria.toUpperCase()}</h2>
+                <ul>
+                  {/* Agregamos ": SetlistSong" aquí también */}
+                  {cancionesEnCategoria.map((song: SetlistSong) => (
+                    <li key={song.song_id}>
+                      <strong>({song.transposed_key || song.original_key})</strong> - {song.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

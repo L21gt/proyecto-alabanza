@@ -333,3 +333,90 @@
   color: var(--text-secondary, #94a3b8);
   margin: 0.25rem 0 0 0;
 }
+
+/* ===============================
+   MODO IMPRESIÓN / PDF CANCIÓN
+================================== */
+@media print {
+
+  /* Quita encabezado/pie de página y ajusta margen */
+  @page {
+    margin: 1.5cm 1cm; 
+  }
+
+  header, nav, .app-header,
+  .btn-back, .btn-secondary, .btn-restore,
+  .controls-panel, .detalle-metadata, 
+  .btn-history, .audit-history-section, .action-buttons {
+    display: none !important;
+  }
+
+  /* 1. Ocultar agresivamente TODO el ruido visual y botones de la web */
+  .btn-back, 
+  .btn-secondary, 
+  .btn-restore,
+  .controls-panel, 
+  .detalle-metadata, /* Esto oculta las etiquetas y el botón de video */
+  .btn-history,
+  .audit-history-section,
+  .action-buttons {
+    display: none !important;
+  }
+
+  /* 2. Fondo blanco puro y texto negro para ahorrar tinta/formato PDF */
+  body, html {
+    background-color: white !important;
+    color: black !important;
+    padding: 0 !important; 
+  }
+
+  /* 3. Limpiar el contenedor para usar todo el ancho de la hoja de papel */
+  .detalle-container {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* 4. Estilo formal para la cabecera (Título y Autor) */
+  .detalle-header {
+    border-bottom: 2px solid black !important;
+    padding-bottom: 1rem !important;
+    margin-bottom: 2rem !important;
+    page-break-after: avoid; /* Evita que el título se imprima huérfano sin letra abajo */
+  }
+
+  .detalle-title {
+    color: black !important;
+    font-size: 26pt !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .detalle-author {
+    color: #444 !important;
+    font-size: 14pt !important;
+  }
+
+  /* 5. Acordes sin fondo gris, legibles y listos para imprimir */
+  .lyric-content {
+    background-color: transparent !important;
+    color: black !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+    overflow: visible !important;
+    
+    /* CRÍTICO: Permite que el texto se rompa de manera natural entre páginas */
+    page-break-inside: auto !important;
+    break-inside: auto !important; 
+    
+    /* NUEVO: Divide el texto en 2 columnas para aprovechar el lado derecho */
+    column-count: 2;
+    column-gap: 3rem;
+    column-rule: 1px dashed #ccc; /* Línea suave divisoria */
+  }
+}

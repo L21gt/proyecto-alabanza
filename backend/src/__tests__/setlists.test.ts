@@ -112,11 +112,16 @@ describe('Módulo de Repertorios (Setlists)', () => {
   });
 
   describe('3. Modificación de Repertorios (POST /api/setlists/:id/songs)', () => {
-    it('Debería permitir al creador agregar una canción al repertorio (201)', async () => {
+    it('Debería permitir al creador agregar una canción con categoría y tono (201)', async () => {
       const res = await request(app)
         .post(`/api/setlists/${musico1SetlistId}/songs`)
         .set('Authorization', `Bearer ${musico1Token}`)
-        .send({ song_id: testSong1Id, transposed_key: 'D', sort_order: 1 });
+        .send({ 
+          song_id: testSong1Id, 
+          transposed_key: 'D', 
+          sort_order: 1,
+          group_name: 'Alabanza' // <-- Probamos el nuevo campo
+        });
       expect(res.status).toBe(201);
     });
 
@@ -129,14 +134,28 @@ describe('Módulo de Repertorios (Setlists)', () => {
     });
   });
 
-  describe('4. Reordenamiento de Repertorios (PUT /api/setlists/:id/songs/order)', () => {
-    it('Debería permitir al creador reordenar las canciones de su repertorio (200)', async () => {
-      const newOrder = [{ song_id: testSong1Id, sort_order: 2, group_name: null }];
+  describe('4. Actualización y Reordenamiento (PUT /api/setlists/:id/songs/order)', () => {
+    it('Debería permitir al creador actualizar el orden, categoría y tono (200)', async () => {
+      const newOrder = [{ 
+        song_id: testSong1Id, 
+        sort_order: 2, 
+        group_name: 'Adoración', // <-- Cambiamos la categoría
+        transposed_key: 'E'      // <-- Cambiamos el tono
+      }];
+      
       const res = await request(app)
         .put(`/api/setlists/${musico1SetlistId}/songs/order`)
         .set('Authorization', `Bearer ${musico1Token}`)
         .send({ songs: newOrder });
       expect(res.status).toBe(200);
+
+      // Verificación estricta: Comprobamos que el GET devuelva los datos actualizados
+      const checkRes = await request(app)
+        .get(`/api/setlists/${musico1SetlistId}`)
+        .set('Authorization', `Bearer ${musico1Token}`);
+      
+      expect(checkRes.body.songs[0]).toHaveProperty('group_name', 'Adoración');
+      expect(checkRes.body.songs[0]).toHaveProperty('transposed_key', 'E');
     });
 
     it('Debería denegar el reordenamiento a un usuario que no es dueño ni Admin (403)', async () => {

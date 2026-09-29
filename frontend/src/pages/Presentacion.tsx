@@ -84,46 +84,47 @@ const Presentacion: React.FC = () => {
 
   return (
     <div className="presentation-layout">
-      {/* Barra superior minimalista */}
-      <header className="presentation-header">
+      {/* Barra superior horizontal y compacta */}
+      <header className="presentation-header-horizontal">
         <button className="btn-exit-presentation" onClick={() => navigate(`/repertorios/${id}`)}>
           ✕ Salir
         </button>
-        <div className="presentation-meta">
+        
+        <div className="presentation-info-horizontal">
           <span className="presentation-badge-group">{currentSong.group_name || 'Sin Asignar'}</span>
-          <h2 className="presentation-title">{currentSong.title}</h2>
-          <span className="presentation-key">Tono: {currentSong.transposed_key}</span>
+          <h2 className="presentation-title-horizontal">{currentSong.title}</h2>
+          <span className="presentation-key-horizontal">Tono: {currentSong.transposed_key}</span>
         </div>
+        
         <div className="presentation-counter">
           {currentIndex + 1} / {fullSongs.length}
         </div>
       </header>
 
-      {/* Área central de lectura */}
-      <main className="presentation-body">
-        <pre className="presentation-chords">{currentSong.content}</pre>
-      </main>
-
-      {/* Controles de navegación fijos al fondo */}
-      <footer className="presentation-footer">
+      {/* Área central con flechas de navegación a los lados */}
+      <main className="presentation-body-with-arrows">
         <button 
-          className="btn-nav prev" 
+          className="nav-arrow" 
           onClick={handlePrev} 
           disabled={isFirst}
-          style={{ opacity: isFirst ? 0.3 : 1 }}
+          title="Canción Anterior (Flecha Izquierda)"
         >
-          &larr; Anterior
+          &#10094;
         </button>
         
+        <div className="presentation-chords-container">
+          <pre className="presentation-chords">{currentSong.content}</pre>
+        </div>
+
         <button 
-          className="btn-nav next" 
+          className="nav-arrow" 
           onClick={handleNext} 
           disabled={isLast}
-          style={{ opacity: isLast ? 0.3 : 1 }}
+          title="Siguiente Canción (Flecha Derecha o Espacio)"
         >
-          Siguiente &rarr;
+          &#10095;
         </button>
-      </footer>
+      </main>
     </div>
   );
 };

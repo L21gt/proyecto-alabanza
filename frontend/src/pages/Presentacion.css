@@ -6,17 +6,17 @@
   position: fixed;
   top: 0;
   left: 0;
-  background-color: #0f172a; /* Fondo ultra oscuro para no cansar la vista */
+  background-color: #0f172a;
   color: #f8fafc;
   z-index: 9999;
-  overflow: hidden;
 }
 
-.presentation-header {
+/* Cabecera horizontal compacta */
+.presentation-header-horizontal {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.5rem 1.5rem; /* Padding reducido para ganar espacio vertical */
   background-color: #1e293b;
   border-bottom: 1px solid #334155;
 }
@@ -25,14 +25,22 @@
   background: transparent;
   color: #ef4444;
   border: 1px solid #ef4444;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
 }
 
-.presentation-meta {
-  text-align: center;
+.presentation-info-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* Espaciado horizontal entre elementos */
+}
+
+.presentation-title-horizontal {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
 }
 
 .presentation-badge-group {
@@ -40,62 +48,88 @@
   color: #60a5fa;
   padding: 0.2rem 0.8rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.presentation-title {
-  margin: 0.5rem 0 0.2rem 0;
-  font-size: 1.5rem;
-}
-
-.presentation-key {
+.presentation-key-horizontal {
   color: #eab308;
   font-weight: bold;
+  font-size: 1.1rem;
 }
 
 .presentation-counter {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: bold;
   color: #94a3b8;
 }
 
-.presentation-body {
+/* Cuerpo principal con flechas laterales */
+.presentation-body-with-arrows {
   flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden; /* BLOQUEO TOTAL DE SCROLL */
+  padding: 0 1rem;
+  width: 100%;
+}
+
+/* Botones laterales gigantes */
+.nav-arrow {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 3rem;
+  padding: 2rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 30vh; /* Zona de clic amplia */
+  display: flex;
+  align-items: center;
   justify-content: center;
+}
+
+.nav-arrow:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.nav-arrow:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+/* Contenedor central de los acordes */
+.presentation-chords-container {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  justify-content: center; 
+  align-items: flex-start; /* Comienza desde arriba */
+  padding: 1.5rem 2rem;
+  overflow-y: auto; /* SCROLL VERTICAL ACTIVO: Protege la visibilidad de letras largas */
+  overflow-x: hidden;
 }
 
 .presentation-chords {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 1.5rem; /* Tamaño grande para leer de lejos */
-  line-height: 1.8;
+  font-size: clamp(1rem, 2vh, 1.5rem); 
+  line-height: 1.4;
   white-space: pre-wrap;
-  max-width: 800px;
   width: 100%;
+  max-width: 1400px;
+  
+  column-count: 2;
+  column-gap: 4rem;
+  column-rule: 1px dashed #334155;
+  height: max-content; /* Permite que el bloque crezca lo necesario hacia abajo */
+  padding-bottom: 3rem; /* Espacio extra al final del scroll */
 }
 
-.presentation-footer {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem 2rem;
-  background-color: #1e293b;
-  border-top: 1px solid #334155;
-}
-
-.btn-nav {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
+/* Loading & Error */
 .presentation-loading, .presentation-error {
   height: 100vh;
   display: flex;
@@ -104,4 +138,11 @@
   font-size: 1.5rem;
   background-color: #0f172a;
   color: white;
+}
+
+/* Si la pantalla es estrecha (como un iPad vertical o móvil), forzamos 1 sola columna */
+@media (max-width: 900px) {
+  .presentation-chords {
+    column-count: 1;
+  }
 }

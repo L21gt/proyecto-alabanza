@@ -133,6 +133,7 @@ const CancionDetalle: React.FC = () => {
         <h1 className="detalle-title">{song.title}</h1>
         <p className="detalle-author">{song.author}</p>
 
+
         <div className="detalle-metadata">
           {song.video_link && (
             <a 
@@ -144,6 +145,9 @@ const CancionDetalle: React.FC = () => {
               ▶ Ver Video de Referencia
             </a>
           )}
+          <button onClick={() => window.print()} className="btn-secondary">
+            🖨️ Descargar PDF
+          </button>
           
           {song.themes && song.themes.length > 0 && (
             <div className="metadata-themes-wrapper">
