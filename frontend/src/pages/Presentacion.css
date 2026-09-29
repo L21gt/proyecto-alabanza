@@ -106,27 +106,27 @@
 .presentation-chords-container {
   flex: 1;
   height: 100%;
-  display: flex;
-  justify-content: center; 
-  align-items: flex-start; /* Comienza desde arriba */
-  padding: 1.5rem 2rem;
-  overflow-y: auto; /* SCROLL VERTICAL ACTIVO: Protege la visibilidad de letras largas */
+  /* CLAVE: Usar 'block' en lugar de 'flex' evita que el centrado corte el texto superior */
+  display: block; 
+  padding: 2rem 3rem;
+  overflow-y: auto; /* Habilita el scroll vertical natural */
   overflow-x: hidden;
 }
 
 .presentation-chords {
   font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(1rem, 2vh, 1.5rem); 
-  line-height: 1.4;
+  font-size: clamp(1.1rem, 2vh, 1.5rem); 
+  line-height: 1.5;
   white-space: pre-wrap;
   width: 100%;
   max-width: 1400px;
+  margin: 0 auto;
   
   column-count: 2;
   column-gap: 4rem;
   column-rule: 1px dashed #334155;
-  height: max-content; /* Permite que el bloque crezca lo necesario hacia abajo */
-  padding-bottom: 3rem; /* Espacio extra al final del scroll */
+  height: auto; /* Permite que el texto dicte el tamaño total hacia abajo */
+  padding-bottom: 4rem; /* Añade un respiro al llegar al final del scroll */
 }
 
 /* Loading & Error */
