@@ -126,9 +126,8 @@ const Repertorios: React.FC = () => {
           setlists.map((setlist) => (
             <div 
               key={setlist.id} 
-              className="setlist-card"
+              className="setlist-card setlist-card-clickable"
               onClick={() => navigate(`/repertorios/${setlist.id}`)}
-              style={{ cursor: 'pointer' }}
             >
               <div className="setlist-card-content">
                 <h3 className="setlist-name">{setlist.name}</h3>
@@ -138,13 +137,12 @@ const Repertorios: React.FC = () => {
                     : 'Sin fecha programada'}
                 </p>
               </div>
-              <div className="setlist-card-action" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="setlist-card-action">
                 <span>Ver canciones &rarr;</span>
                 {/* BOTÓN PARA ELIMINAR */}
                 <button 
-                  className="btn-danger" 
+                  className="btn-danger btn-delete-setlist" 
                   onClick={(e) => handleDelete(e, setlist.id)}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
                 >
                   Eliminar
                 </button>

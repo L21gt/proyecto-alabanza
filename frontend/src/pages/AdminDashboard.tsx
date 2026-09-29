@@ -219,26 +219,26 @@ const AdminDashboard: React.FC = () => {
               const isCurrentUser = String(account.id) === currentUserId;
 
               return (
-                <tr key={account.id} style={{ opacity: account.status === 'Rechazado' ? 0.6 : 1 }}>
+                <tr key={account.id} className={account.status === 'Rechazado' ? 'row-rejected' : ''}>
                   <td>
                     <strong>{account.name}</strong>
                     <br />
                     <span className="text-muted">{account.email}</span>
                   </td>
                   <td>
-                    <span className="badge-area" style={{ backgroundColor: account.role === 'Admin' ? 'rgba(234, 179, 8, 0.2)' : '', color: account.role === 'Admin' ? '#eab308' : '' }}>
+                    <span className={`badge-area ${account.role === 'Admin' ? 'badge-admin' : ''}`}>
                       {account.role}
                     </span>
                   </td>
                   <td>
-                    <span style={{ color: account.status === 'Aprobado' ? '#16a34a' : account.status === 'Rechazado' ? '#ef4444' : '#f59e0b', fontWeight: 'bold' }}>
+                    <span className={`status-badge status-${account.status.toLowerCase()}`}>
                       {account.status}
                     </span>
                   </td>
                   <td>{new Date(account.created_at).toLocaleDateString('es-ES')}</td>
                   <td className="actions-cell">
                     {isCurrentUser ? (
-                      <span className="text-muted" style={{ fontStyle: 'italic', padding: '0.4rem 0' }}>
+                      <span className="text-muted text-protected">
                         Tu cuenta (Protegida)
                       </span>
                     ) : (
@@ -353,7 +353,7 @@ const AdminDashboard: React.FC = () => {
           <tbody>
             {deletedSongs.map((song) => (
               <tr key={song.id}>
-                <td><strong style={{ textDecoration: 'line-through', color: '#888' }}>{song.title}</strong></td>
+                <td><strong className="text-strikethrough">{song.title}</strong></td>
                 <td>{song.author}</td>
                 <td>{song.category}</td>
                 <td>{song.deleted_by_name || 'Usuario del Sistema'}</td>
@@ -436,11 +436,11 @@ const AdminDashboard: React.FC = () => {
         <div className="modal-overlay" onClick={() => setPreviewSong(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{previewSong.title}</h3>
+              <h3 className="modal-title">{previewSong.title}</h3>
               <button className="btn-close" onClick={() => setPreviewSong(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div style={{ marginBottom: '1rem', display: 'flex', gap: '1.5rem', fontSize: '0.9rem' }}>
+              <div className="modal-metadata">
                 <span><strong>Autor:</strong> {previewSong.author}</span>
                 <span><strong>Tonalidad:</strong> <span className="badge-area">{previewSong.original_key}</span></span>
                 <span><strong>Categoría:</strong> {previewSong.category}</span>

@@ -177,3 +177,34 @@
     margin-bottom: 0.25rem;
   }
 }
+
+/* Nuevas clases extraídas de Login.tsx */
+.success-message {
+  background-color: #dcfce3;
+  color: #166534;
+}
+
+.danger-message {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.login-toggle-wrapper {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.login-toggle-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.btn-toggle-login {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  cursor: pointer;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+}

@@ -52,7 +52,7 @@ const RepertorioDetalle: React.FC = () => {
   useEffect(() => {
     const search = async () => {
       if (!debouncedSearchTerm.trim()) {
-        setSearchResults([]);
+        setSearchResults([]); // <-- Restaurado a la forma simple, eliminando ambos errores
         return;
       }
       setIsSearching(true);
@@ -197,38 +197,38 @@ const RepertorioDetalle: React.FC = () => {
   return (
     <div className="repertorio-detalle-container">
       {/* HEADER Y BÚSQUEDA IGUALES A TU VERSIÓN ANTERIOR */}
-      <header className="rd-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header className="rd-header rd-header-layout">
         <div>
           <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
           <h2 className="rd-title">{setlist.name}</h2>
           {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
         </div>
+        
+        <div className="rd-header-actions">
+          <button 
+              className="btn-secondary rd-btn-print" 
+              onClick={() => window.print()}
+            >
+              🖨️ PDF / Imprimir
+            </button>
 
-        <button 
-            className="btn-secondary" 
-            onClick={() => window.print()}
-            style={{ padding: '0.75rem 1.5rem', fontSize: '1.1rem' }}
+          <button 
+            className="btn-primary rd-btn-presentation" 
+            onClick={() => {
+              if (!setlist.songs || setlist.songs.length === 0) return alert('Debes agregar canciones.');
+              const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
+              const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
+              
+              if (missing.length > 0) {
+                alert(`⚠️ Faltan asignar canciones en: ${missing.join(', ')}`);
+                return;
+              }
+              navigate(`/repertorios/${id}/presentacion`);
+            }}
           >
-            🖨️ PDF / Imprimir
+            ▶ Iniciar Presentación
           </button>
-
-        <button 
-          className="btn-primary" 
-          onClick={() => {
-            if (!setlist.songs || setlist.songs.length === 0) return alert('Debes agregar canciones.');
-            const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
-            const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
-            
-            if (missing.length > 0) {
-              alert(`⚠️ Faltan asignar canciones en: ${missing.join(', ')}`);
-              return;
-            }
-            navigate(`/repertorios/${id}/presentacion`);
-          }}
-          style={{ padding: '0.75rem 1.5rem', fontSize: '1.1rem', backgroundColor: '#10b981', color: 'white' }}
-        >
-          ▶ Iniciar Presentación
-        </button>
+        </div>
       </header>
 
       <section className="rd-search-section">
@@ -239,7 +239,7 @@ const RepertorioDetalle: React.FC = () => {
           <div className="rd-search-results">
             {searchResults.map(song => (
               <div key={song.id} className="rd-result-card">
-                <div className="rd-result-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <div className="rd-result-info rd-result-info-layout">
                   <strong 
                     className="kanban-song-title-link"
                     onClick={() => navigate(`/cancion/${song.id}?repertorioId=${id}`)}
@@ -252,10 +252,10 @@ const RepertorioDetalle: React.FC = () => {
                   <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
                     {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
                   </select>
-                  <select className="rd-select-meta" style={{ marginLeft: '10px' }} value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
+                  <select className="rd-select-meta rd-select-margin" value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
                     {KANBAN_COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
                   </select>
-                  <button className="btn-add" onClick={() => handleAddSong(song)} style={{ marginLeft: '10px' }}>Añadir</button>
+                  <button className="btn-add rd-btn-margin" onClick={() => handleAddSong(song)}>Añadir</button>
                 </div>
               </div>
             ))}
@@ -267,7 +267,7 @@ const RepertorioDetalle: React.FC = () => {
 
       {/* NUEVO: SECCIÓN KANBAN */}
       <section className="rd-kanban-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="rd-kanban-header">
           <h3>Tablero de Servicio ({setlist.songs?.length || 0})</h3>
           {isUpdatingOrder && <span className="rd-helper-text">Guardando cambios...</span>}
         </div>

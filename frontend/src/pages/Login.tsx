@@ -86,7 +86,7 @@ const Login: React.FC = () => {
         </h2>
         
         {error && (
-          <div className="error-message" style={{ backgroundColor: error.includes('éxito') ? '#dcfce3' : '#fee2e2', color: error.includes('éxito') ? '#166534' : '#991b1b' }}>
+          <div className={`error-message ${error.includes('éxito') ? 'success-message' : 'danger-message'}`}>
             {error}
           </div>
         )}
@@ -217,21 +217,13 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+        <div className="login-toggle-wrapper">
+          <p className="login-toggle-text">
             {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes una cuenta?'}
             <button 
               type="button"
               onClick={resetFormAndToggle}
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: 'var(--accent-color)', 
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                marginLeft: '0.5rem',
-                fontSize: '0.9rem'
-              }}
+              className="btn-toggle-login"
             >
               {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
             </button>

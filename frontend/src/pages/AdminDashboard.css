@@ -260,3 +260,51 @@
   justify-content: flex-end;
   gap: 1rem;
 }
+
+/* Nuevas clases extraídas de AdminDashboard.tsx */
+.row-rejected {
+  opacity: 0.6;
+}
+
+.badge-admin {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.status-badge {
+  font-weight: bold;
+}
+
+.status-aprobado {
+  color: #16a34a;
+}
+
+.status-rechazado {
+  color: #ef4444;
+}
+
+.status-pendiente {
+  color: #f59e0b;
+}
+
+.text-protected {
+  font-style: italic;
+  padding: 0.4rem 0;
+}
+
+.text-strikethrough {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.modal-title {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.modal-metadata {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+}

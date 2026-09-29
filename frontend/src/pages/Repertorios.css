@@ -165,3 +165,19 @@
 }
 
 /* Comentario de prueba para forzar frontend deployment en produccion */
+
+/* Nuevas clases extraídas de Repertorios.tsx */
+.setlist-card-clickable {
+  cursor: pointer;
+}
+
+.setlist-card-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-delete-setlist {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}

@@ -615,3 +615,47 @@
 .kanban-song-title-link:hover {
   text-decoration-color: var(--accent-color, #3b82f6);
 }
+
+/* Nuevas clases extraídas de RepertorioDetalle.tsx */
+.rd-header-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.rd-header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.rd-btn-print {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+.rd-btn-presentation {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  background-color: #10b981;
+  color: white;
+}
+
+.rd-result-info-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rd-select-margin {
+  margin-left: 10px;
+}
+
+.rd-btn-margin {
+  margin-left: 10px;
+}
+
+.rd-kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
