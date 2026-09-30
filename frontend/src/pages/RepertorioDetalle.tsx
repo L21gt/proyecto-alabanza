@@ -190,6 +190,22 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
+  // Validador de reglas de negocio para el repertorio
+  const isSetlistComplete = (): boolean => {
+    if (!setlist?.songs || setlist.songs.length === 0) {
+      alert('Debes agregar canciones al repertorio primero.');
+      return false;
+    }
+    const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
+    const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
+    
+    if (missing.length > 0) {
+      alert(`⚠️ Acción denegada. Faltan asignar canciones en: ${missing.join(', ')}`);
+      return false;
+    }
+    return true;
+  };
+
   if (loading) return <div className="loading-container">Cargando detalles...</div>;
   if (error) return <div className="error-message-container">{error}</div>;
   if (!setlist) return <div className="error-message-container">Repertorio no encontrado</div>;
@@ -206,24 +222,22 @@ const RepertorioDetalle: React.FC = () => {
         
         <div className="rd-header-actions">
           <button 
-              className="btn-secondary rd-btn-print" 
-              onClick={() => window.print()}
-            >
-              🖨️ PDF / Imprimir
-            </button>
+            className="btn-secondary rd-btn-print" 
+            onClick={() => {
+              if (isSetlistComplete()) {
+                window.print();
+              }
+            }}
+          >
+            🖨️ PDF / Imprimir
+          </button>
 
           <button 
             className="btn-primary rd-btn-presentation" 
             onClick={() => {
-              if (!setlist.songs || setlist.songs.length === 0) return alert('Debes agregar canciones.');
-              const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
-              const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
-              
-              if (missing.length > 0) {
-                alert(`⚠️ Faltan asignar canciones en: ${missing.join(', ')}`);
-                return;
+              if (isSetlistComplete()) {
+                navigate(`/repertorios/${id}/presentacion`);
               }
-              navigate(`/repertorios/${id}/presentacion`);
             }}
           >
             ▶ Iniciar Presentación
