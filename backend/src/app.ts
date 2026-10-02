@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import songsRoutes from './routes/songs.routes';
 import setlistsRoutes from './routes/setlists.routes';
 import userRoutes from './routes/users.routes';
+import themesRoutes from './routes/themes.routes';
 
 const app: Application = express();
 

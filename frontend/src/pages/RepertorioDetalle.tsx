@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder } from '../services/setlists.service';
+import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder, updateSetlistTheme } from '../services/setlists.service';
 import { getSongs } from '../services/songs.service';
-import type { Setlist, Song, SetlistSong } from '../types';
+import { getThemes } from '../services/themes.service';
+import type { Setlist, Song, SetlistSong, Theme } from '../types';
 import './RepertorioDetalle.css';
 
 const MUSICAL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -206,6 +207,34 @@ const RepertorioDetalle: React.FC = () => {
     return true;
   };
 
+  const [themes, setThemes] = useState<Theme[]>([]);
+
+  // Efecto para cargar los temas al entrar a la pantalla
+  useEffect(() => {
+    const fetchAllThemes = async () => {
+      try {
+        const data = await getThemes();
+        setThemes(data);
+      } catch (err) {
+        console.error("Error al cargar temas", err);
+      }
+    };
+    fetchAllThemes();
+  }, []);
+
+  // Manejador para cuando el usuario cambia el tema
+  const handleThemeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newThemeId = e.target.value ? Number(e.target.value) : null;
+    if (!id) return;
+    
+    try {
+      await updateSetlistTheme(id, newThemeId);
+      await fetchSetlistDetails(); // Recarga para aplicar los nuevos estilos del backend
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
+    }
+  };
+
   if (loading) return <div className="loading-container">Cargando detalles...</div>;
   if (error) return <div className="error-message-container">{error}</div>;
   if (!setlist) return <div className="error-message-container">Repertorio no encontrado</div>;
@@ -220,7 +249,22 @@ const RepertorioDetalle: React.FC = () => {
           {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
         </div>
         
-        <div className="rd-header-actions">
+        <div className="rd-header-actions rd-header-actions-align">
+          {/* NUEVO: Selector de Temas */}
+          <div className="rd-theme-selector-container">
+            <label className="rd-theme-selector-label">Tema PDF:</label>
+            <select 
+              className="rd-select-meta rd-theme-select" 
+              value={setlist.theme_id || ''} 
+              onChange={handleThemeChange}
+            >
+              <option value="">Fondo Blanco (Por defecto)</option>
+              {themes.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+
           <button 
             className="btn-secondary rd-btn-print" 
             onClick={() => {
@@ -355,7 +399,14 @@ const RepertorioDetalle: React.FC = () => {
       {/* =========================================
           PLANTILLA OCULTA PARA IMPRESIÓN / PDF
       ========================================= */}
-      <div className="printable-setlist-pdf">
+      <div 
+        className="printable-setlist-pdf"
+        style={{
+          ['--theme-bg' as string]: setlist.theme_background_style || 'white',
+          ['--theme-color' as string]: setlist.theme_text_color || 'black',
+          ['--theme-font' as string]: setlist.theme_font_family || 'inherit',
+        }}
+      >
         <div className="pdf-header">
           <h1>{setlist.name}</h1>
           <div className="pdf-date">

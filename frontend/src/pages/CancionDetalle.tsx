@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSongById, deleteSong } from '../services/songs.service';
-import type { Song } from '../types';
+import { getSetlistById } from '../services/setlists.service';
+import type { Song, Setlist } from '../types';
 import './CancionDetalle.css';
 
 // Interfaz para tipar los registros de auditoría devueltos por /api/songs/:id/history
@@ -22,8 +23,9 @@ const CancionDetalle: React.FC = () => {
 
   const [searchParams] = useSearchParams();
   const repertorioId = searchParams.get('repertorioId');
-  
+  const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [song, setSong] = useState<Song | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [transposeOffset, setTransposeOffset] = useState(0);
@@ -53,6 +55,20 @@ const CancionDetalle: React.FC = () => {
 
     fetchSong();
   }, [id, transposeOffset]);
+
+  // Cargar datos del repertorio si la canción se abrió desde uno
+  useEffect(() => {
+    const fetchSetlistTheme = async () => {
+      if (!repertorioId) return;
+      try {
+        const data = await getSetlistById(repertorioId);
+        setSetlist(data);
+      } catch (err) {
+        console.error("Error al cargar el tema del repertorio:", err);
+      }
+    };
+    fetchSetlistTheme();
+  }, [repertorioId]);
 
   // Obtención asíncrona de la línea de tiempo de auditoría
   const handleToggleHistory = async () => {
@@ -112,7 +128,14 @@ const CancionDetalle: React.FC = () => {
   if (!song) return <div className="not-found-message">Canción no encontrada</div>;
 
   return (
-    <div className="detalle-container">
+    <div 
+      className="detalle-container"
+      style={{
+        ['--theme-bg' as string]: setlist?.theme_background_style || 'white',
+        ['--theme-color' as string]: setlist?.theme_text_color || 'black',
+        ['--theme-font' as string]: setlist?.theme_font_family || 'inherit',
+      }}
+    >
       {repertorioId ? (
         <button 
           className="btn-back" 

@@ -233,4 +233,26 @@ describe('Módulo de Repertorios (Setlists)', () => {
       expect(res.status).toBe(500);
     });
   });
+
+  describe('7. Temas de Repertorios (Coverage)', () => {
+    it('Debería retornar 404 al intentar actualizar el tema de un repertorio inexistente', async () => {
+      const res = await request(app)
+        .put('/api/setlists/999999/theme')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ theme_id: 1 });
+      
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Repertorio no encontrado');
+    });
+
+    it('Debería denegar la actualización del tema a un usuario que no es el creador', async () => {
+      const res = await request(app)
+        .put(`/api/setlists/${musico1SetlistId}/theme`)
+        .set('Authorization', `Bearer ${musico2Token}`) // Músico 2 intenta editar el setlist del Músico 1
+        .send({ theme_id: 1 });
+      
+      expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty('error', 'No tienes permisos para modificar este repertorio');
+    });
+  });
 });

@@ -36,6 +36,12 @@ export interface Setlist {
   user_id: number;
   created_at?: string;
   songs?: SetlistSong[]; // Puede venir vacío al listar, o lleno al ver el detalle
+  // Campos del Tema (opcionales porque vienen del LEFT JOIN)
+  theme_id?: number | null;
+  theme_name?: string;
+  theme_background_style?: string;
+  theme_text_color?: string;
+  theme_font_family?: string;
 }
 
 // Interfaz para las respuestas de Autenticación (Login / Registro)
@@ -48,4 +54,13 @@ export interface AuthResponse {
     role: string;
     name?: string;
   };
+}
+
+// NUEVO: Interfaz para los temas del PDF
+export interface Theme {
+  id: number;
+  name: string;
+  background_style: string;
+  text_color: string;
+  font_family: string;
 }

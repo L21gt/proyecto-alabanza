@@ -120,3 +120,20 @@ export const updateSetlistOrder = async (
     throw new Error(result.error || 'Error al actualizar el orden del repertorio');
   }
 };
+
+export const updateSetlistTheme = async (id: string | number, themeId: number | null): Promise<void> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/setlists/${id}/theme`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ theme_id: themeId })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Error al actualizar el tema');
+  }
+};

@@ -44,7 +44,19 @@ export const getSetlists = async (req: Request, res: Response): Promise<void> =>
 export const getSetlistById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   try {
-    const setlistRes = await pool.query('SELECT * FROM setlists WHERE id = $1', [id]);
+    // ACTUALIZADO: Hacemos un LEFT JOIN para traer los datos del tema
+    const query = `
+      SELECT s.*, 
+             t.name as theme_name, 
+             t.background_style as theme_background_style, 
+             t.text_color as theme_text_color, 
+             t.font_family as theme_font_family
+      FROM setlists s
+      LEFT JOIN themes t ON s.theme_id = t.id
+      WHERE s.id = $1
+    `;
+    const setlistRes = await pool.query(query, [id]);
+    
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
@@ -212,5 +224,33 @@ export const reorderSetlistSongs = async (req: Request, res: Response): Promise<
   } catch (error) {
     console.error('Error al reordenar el repertorio:', error);
     res.status(500).json({ error: 'Error interno del servidor al reordenar' });
+  }
+};
+
+// NUEVO ENDPOINT: Actualizar el Tema de un Repertorio
+export const updateSetlistTheme = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { theme_id } = req.body;
+  const user = (req as any).user as AuthUser;
+
+  try {
+    // RBAC: Verify ownership or Admin privileges
+    const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
+    if (setlistRes.rows.length === 0) {
+      res.status(404).json({ error: 'Repertorio no encontrado' });
+      return;
+    }
+
+    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+      res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
+      return;
+    }
+
+    // Actualizamos el theme_id (permite nulos si el usuario quiere "quitar" el tema)
+    await pool.query('UPDATE setlists SET theme_id = $1 WHERE id = $2', [theme_id || null, id]);
+    res.status(200).json({ message: 'Tema actualizado exitosamente' });
+  } catch (error) {
+    console.error('Error al actualizar el tema del repertorio:', error);
+    res.status(500).json({ error: 'Error interno del servidor al actualizar tema' });
   }
 };

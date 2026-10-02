@@ -6,7 +6,8 @@ import {
   addSongToSetlist,
   removeSongFromSetlist,
   deleteSetlist,
-  reorderSetlistSongs
+  reorderSetlistSongs,
+  updateSetlistTheme
 } from '../controllers/setlists.controller';
 
 import { verifyToken } from '../middlewares/auth.middleware';
@@ -20,7 +21,8 @@ router.use(verifyToken);
 router.post('/', createSetlist);
 router.get('/', getSetlists);
 router.get('/:id', getSetlistById);
-router.delete('/:id', deleteSetlist); // <-- RUTA RESTAURADA
+router.delete('/:id', deleteSetlist);
+router.put('/:id/theme', updateSetlistTheme);
 
 // Rutas de Canciones dentro de un Repertorio
 router.post('/:id/songs', addSongToSetlist);

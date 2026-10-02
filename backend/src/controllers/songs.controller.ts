@@ -77,6 +77,7 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
           themeId = existingTheme.rows[0].id;
         }
 
+        // CORRECCIÓN: Quitamos el ON CONFLICT ya que la canción es nueva, no habrá duplicados de temas para ella.
         await client.query(
           `INSERT INTO song_themes (song_id, theme_id) VALUES ($1, $2)`,
           [newSong.id, themeId]
@@ -283,8 +284,10 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
       [id, req.user?.id || null, 'EDICION', previousStatus, targetStatus, `Edición del contenido / metadatos de la canción`]
     );
 
+    // Lógica limpia: Eliminamos todos los temas anteriores de esta canción
     await client.query('DELETE FROM song_themes WHERE song_id = $1', [id]);
 
+    // LÓGICA DE TEMAS (ETIQUETAS) - Insertamos los nuevos limpiamente
     if (themes && Array.isArray(themes) && themes.length > 0) {
       const safeThemes = themes.slice(0, 10);
       for (const themeName of safeThemes) {
@@ -306,6 +309,7 @@ export const updateSong = async (req: AuthRequest, res: Response): Promise<void>
           themeId = existingTheme.rows[0].id;
         }
 
+        // CORRECCIÓN: Quitamos el ON CONFLICT ya que las relaciones viejas acaban de ser eliminadas arriba
         await client.query(
           `INSERT INTO song_themes (song_id, theme_id) VALUES ($1, $2)`,
           [id, themeId]

@@ -4,7 +4,7 @@
 -- Autor: Equipo de Desarrollo
 -- Motor: PostgreSQL 14+
 -- Descripción: Esquema relacional con soporte para RBAC, control editorial 
---              (borradores), repertorios dinámicos y bitácora de auditoría.
+--              (borradores), repertorios dinámicos, bitácora y personalización.
 -- ============================================================================
 
 
@@ -46,7 +46,7 @@ ALTER TABLE users OWNER TO admin;
 
 
 -- ============================================================================
--- 3. MÓDULO DEL CATÁLOGO DE CANCIONES Y ETIQUETAS
+-- 3. MÓDULO DEL CATÁLOGO DE CANCIONES Y ETIQUETAS (TEMAS)
 -- ============================================================================
 
 CREATE TABLE songs (
@@ -71,14 +71,17 @@ ALTER TABLE songs OWNER TO admin;
 CREATE INDEX idx_songs_title  ON songs (title);
 CREATE INDEX idx_songs_author ON songs (author);
 
-
-CREATE TABLE themes (
-    id   SERIAL       PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE
+-- 3.1 Tabla unificada de Temas (Etiquetas de canciones y Estilos de Repertorio)
+CREATE TABLE IF NOT EXISTS themes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    background_style TEXT, 
+    text_color VARCHAR(50) DEFAULT '#000000',
+    font_family VARCHAR(100) DEFAULT 'Arial, sans-serif',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE themes OWNER TO admin;
-
 
 CREATE TABLE song_themes (
     song_id  INTEGER NOT NULL REFERENCES songs(id)  ON DELETE CASCADE,
@@ -98,6 +101,7 @@ CREATE TABLE setlists (
     name       VARCHAR(255)             NOT NULL,
     event_date DATE,
     user_id    INTEGER                  REFERENCES users(id) ON DELETE SET NULL,
+    theme_id   INTEGER                  REFERENCES themes(id) ON DELETE SET NULL, -- Relación directa con el diseño
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -136,3 +140,23 @@ ALTER TABLE song_audit_logs OWNER TO admin;
 
 -- Índice para optimizar consultas de línea de tiempo por canción
 CREATE INDEX idx_song_audit_logs_song_id ON song_audit_logs (song_id);
+
+-- ============================================================================
+-- 6. INSERCIÓN DE DATOS INICIALES (ESTILOS VISUALES)
+-- ============================================================================
+
+INSERT INTO themes (name, background_style, text_color, font_family)
+SELECT 'Clásico Blanco', 'none', '#000000', 'Arial, sans-serif'
+WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Clásico Blanco');
+
+INSERT INTO themes (name, background_style, text_color, font_family)
+SELECT 'Pergamino Elegante', 'url("https://www.transparenttextures.com/patterns/cream-paper.png")', '#2c1e16', '"Georgia", serif'
+WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Pergamino Elegante');
+
+INSERT INTO themes (name, background_style, text_color, font_family)
+SELECT 'Cielo Azul', 'linear-gradient(to bottom, #f0f9ff, #e0f2fe)', '#0369a1', '"Helvetica Neue", Helvetica, Arial, sans-serif'
+WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Cielo Azul');
+
+INSERT INTO themes (name, background_style, text_color, font_family)
+SELECT 'Noche Estrellada', 'linear-gradient(to bottom, #1e293b, #0f172a)', '#f8fafc', '"Courier New", Courier, monospace'
+WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Noche Estrellada');

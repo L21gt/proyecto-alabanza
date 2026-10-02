@@ -548,13 +548,24 @@
     margin: 1.5cm; 
   }
 
+  /* OBLIGA AL NAVEGADOR A IMPRIMIR FONDOS Y COLORES (Marcos/Temas) */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Asegura que todos los textos hereden el color del tema y no se queden negros */
+  .printable-setlist-pdf * {
+    color: inherit;
+  }
+
   /* Centramos el título y la fecha */
   .pdf-header {
     display: flex;
     flex-direction: row; /* Fuerzas que estén lado a lado */
     justify-content: center; /* Los centra horizontalmente */
     align-items: center;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid currentColor !important;
     padding-bottom: 1rem;
     margin-bottom: 2rem;
     gap: 2rem; /* Espacio entre el título y la fecha */
@@ -658,4 +669,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* =========================================
+   SELECTOR DE TEMAS (Kanban Header)
+========================================= */
+.rd-header-actions-align {
+  align-items: center;
+}
+
+.rd-theme-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rd-theme-selector-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.rd-theme-select {
+  padding: 0.5rem;
+  min-width: 150px;
+}
+
+/* =========================================
+   APLICACIÓN DEL TEMA AL PDF IMPRIMIBLE
+========================================= */
+.printable-setlist-pdf {
+  /* Usamos las variables inyectadas por React, o caemos en blanco y negro */
+  background: var(--theme-bg, white);
+  color: var(--theme-color, black);
+  font-family: var(--theme-font, inherit);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
 }
