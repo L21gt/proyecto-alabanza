@@ -412,9 +412,33 @@
     
     page-break-inside: auto !important;
     break-inside: auto !important; 
-    
+  }
+
+  /* NUEVA CLASE: Solo se aplica si la canción es muy larga o el usuario lo pide */
+  .lyric-content.two-columns {
     column-count: 2;
     column-gap: 3rem;
-    column-rule: 1px dashed currentColor; /* La línea divisoria hereda el color */
+    column-rule: 1px dashed currentColor;
   }
+}
+
+/* =========================================
+   ACCIONES DE CABECERA Y CONTROLES (CancionDetalle)
+========================================= */
+.cd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cd-checkbox-label {
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary); /* Usa la variable de tu tema general si existe */
+}
+
+.cd-checkbox-input {
+  margin-right: 0.5rem;
 }

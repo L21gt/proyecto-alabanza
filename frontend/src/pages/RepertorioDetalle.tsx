@@ -53,7 +53,7 @@ const RepertorioDetalle: React.FC = () => {
   useEffect(() => {
     const search = async () => {
       if (!debouncedSearchTerm.trim()) {
-        setSearchResults([]); // <-- Restaurado a la forma simple, eliminando ambos errores
+        setSearchResults([]); 
         return;
       }
       setIsSearching(true);
@@ -105,7 +105,6 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
-  // Cambio de Tono en vivo
   const handleUpdateKey = async (songId: number, newKey: string) => {
     if (!setlist || !setlist.songs || !id) return;
     const newSongs = [...setlist.songs];
@@ -133,7 +132,6 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
-  // Motor del Tablero Kanban (Pangea DND)
   const onDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -142,38 +140,30 @@ const RepertorioDetalle: React.FC = () => {
 
     setIsUpdatingOrder(true);
 
-    // 1. Agrupamos las canciones actuales lógicamente por columna
     const getSongsByCol = (col: string) => 
       setlist.songs!.filter(s => col === 'Sin Asignar' ? !s.group_name : s.group_name === col);
 
-    // INYECTAMOS UN TIPO SEGURO PARA CONTENTAR A TYPESCRIPT
     type SetlistSongType = NonNullable<Setlist['songs']>[number];
 
     const columnsData = KANBAN_COLUMNS.reduce((acc, col) => {
       acc[col] = getSongsByCol(col);
       return acc;
-    }, {} as Record<string, SetlistSongType[]>); // <-- Usamos el tipo exacto en lugar de any[]
+    }, {} as Record<string, SetlistSongType[]>); 
 
-    // 2. Extraemos la canción movida de la columna de origen
     const sourceCol = [...columnsData[source.droppableId]];
     const [movedSong] = sourceCol.splice(source.index, 1);
 
-    // 3. Modificamos su grupo (si se movió a Sin Asignar, es null/undefined)
     movedSong.group_name = destination.droppableId === 'Sin Asignar' ? undefined : destination.droppableId;
 
-    // 4. Insertamos la canción en la columna de destino
     const destCol = source.droppableId === destination.droppableId ? sourceCol : [...columnsData[destination.droppableId]];
     destCol.splice(destination.index, 0, movedSong);
 
-    // Actualizamos nuestro mapa temporal
     columnsData[source.droppableId] = sourceCol;
     columnsData[destination.droppableId] = destCol;
 
-    // 5. Aplanamos todas las columnas en un solo arreglo para reconstruir el sort_order general
     const flatNewSongs = KANBAN_COLUMNS.flatMap(col => columnsData[col]);
     setSetlist({ ...setlist, songs: flatNewSongs });
 
-    // 6. Enviamos el nuevo orden al servidor
     try {
       const orderPayload = flatNewSongs.map((song, i) => ({
         song_id: song.song_id,
@@ -191,7 +181,6 @@ const RepertorioDetalle: React.FC = () => {
     }
   };
 
-  // Validador de reglas de negocio para el repertorio
   const isSetlistComplete = (): boolean => {
     if (!setlist?.songs || setlist.songs.length === 0) {
       alert('Debes agregar canciones al repertorio primero.');
@@ -209,7 +198,6 @@ const RepertorioDetalle: React.FC = () => {
 
   const [themes, setThemes] = useState<Theme[]>([]);
 
-  // Efecto para cargar los temas al entrar a la pantalla
   useEffect(() => {
     const fetchAllThemes = async () => {
       try {
@@ -222,14 +210,13 @@ const RepertorioDetalle: React.FC = () => {
     fetchAllThemes();
   }, []);
 
-  // Manejador para cuando el usuario cambia el tema
   const handleThemeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newThemeId = e.target.value ? Number(e.target.value) : null;
     if (!id) return;
     
     try {
       await updateSetlistTheme(id, newThemeId);
-      await fetchSetlistDetails(); // Recarga para aplicar los nuevos estilos del backend
+      await fetchSetlistDetails();
     } catch (err) {
       if (err instanceof Error) alert(err.message);
     }
@@ -241,7 +228,6 @@ const RepertorioDetalle: React.FC = () => {
 
   return (
     <div className="repertorio-detalle-container">
-      {/* HEADER Y BÚSQUEDA IGUALES A TU VERSIÓN ANTERIOR */}
       <header className="rd-header rd-header-layout">
         <div>
           <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
@@ -250,9 +236,10 @@ const RepertorioDetalle: React.FC = () => {
         </div>
         
         <div className="rd-header-actions rd-header-actions-align">
-          {/* NUEVO: Selector de Temas */}
+          
+          {/* SELECTOR DE TEMAS */}
           <div className="rd-theme-selector-container">
-            <label className="rd-theme-selector-label">Tema PDF:</label>
+            <label className="rd-theme-selector-label" style={{ fontWeight: 'bold', marginRight: '5px' }}>Tema PDF:</label>
             <select 
               className="rd-select-meta rd-theme-select" 
               value={setlist.theme_id || ''} 
@@ -290,8 +277,25 @@ const RepertorioDetalle: React.FC = () => {
       </header>
 
       <section className="rd-search-section">
-        <h3>Agregar Canciones</h3>
-        <input type="text" className="rd-search-input" placeholder="Busca en el catálogo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        {/* NUEVO BLOQUE: Título + Botón de Sugerir Canción integrados */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0 }}>Agregar Canciones</h3>
+          <button 
+            className="btn-primary" 
+            onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
+            title="¿No encuentras la canción? Envíala para revisión"
+          >
+            ➕ Sugerir Nueva Canción al Catálogo
+          </button>
+        </div>
+
+        <input 
+          type="text" 
+          className="rd-search-input" 
+          placeholder="Busca en el catálogo..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+        />
         {isSearching && <p className="rd-helper-text">Buscando...</p>}
         {searchResults.length > 0 && (
           <div className="rd-search-results">
@@ -323,7 +327,6 @@ const RepertorioDetalle: React.FC = () => {
 
       <hr className="rd-divider" />
 
-      {/* NUEVO: SECCIÓN KANBAN */}
       <section className="rd-kanban-section">
         <div className="rd-kanban-header">
           <h3>Tablero de Servicio ({setlist.songs?.length || 0})</h3>
@@ -335,7 +338,6 @@ const RepertorioDetalle: React.FC = () => {
             {KANBAN_COLUMNS.map(columnId => {
               const columnSongs = setlist.songs?.filter(s => columnId === 'Sin Asignar' ? !s.group_name : s.group_name === columnId) || [];
               
-              // No mostrar "Sin Asignar" si está vacía, para mantener limpio el tablero
               if (columnId === 'Sin Asignar' && columnSongs.length === 0) return null;
 
               return (
@@ -349,7 +351,6 @@ const RepertorioDetalle: React.FC = () => {
                         ref={provided.innerRef} 
                         {...provided.droppableProps}
                       >
-                        {/* Agregamos ": SetlistSong" al parámetro song */}
                         {columnSongs.map((song: SetlistSong, index: number) => (
                           <Draggable key={String(song.song_id)} draggableId={String(song.song_id)} index={index}>
                             {(provided, snapshot) => (
@@ -360,7 +361,6 @@ const RepertorioDetalle: React.FC = () => {
                                 className={`kanban-card ${snapshot.isDragging ? 'is-dragging' : ''} ${song.status === 'Pendiente' ? 'song-pending' : ''}`}
                               >
                                 <div className="kanban-card-header">
-                                  {/* Ya no usamos "any", TypeScript ahora sabe que es válido */}
                                   <strong 
                                     className="kanban-song-title-link"
                                     onClick={() => navigate(`/cancion/${song.song_id}?repertorioId=${id}`)}
@@ -396,9 +396,7 @@ const RepertorioDetalle: React.FC = () => {
         </DragDropContext>
       </section>
 
-      {/* =========================================
-          PLANTILLA OCULTA PARA IMPRESIÓN / PDF
-      ========================================= */}
+      {/* PLANTILLA OCULTA PARA IMPRESIÓN / PDF */}
       <div 
         className="printable-setlist-pdf"
         style={{
@@ -424,10 +422,9 @@ const RepertorioDetalle: React.FC = () => {
               <div key={categoria} className="pdf-category-section">
                 <h2>{categoria.toUpperCase()}</h2>
                 <ul>
-                  {/* Agregamos ": SetlistSong" aquí también */}
                   {cancionesEnCategoria.map((song: SetlistSong) => (
                     <li key={song.song_id}>
-                      <strong>({song.transposed_key || song.original_key})</strong> - {song.title}
+                      <strong>({song.transposed_key || song.original_key})</strong> {song.title}
                     </li>
                   ))}
                 </ul>

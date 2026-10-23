@@ -25,6 +25,7 @@ const CancionDetalle: React.FC = () => {
   const repertorioId = searchParams.get('repertorioId');
   const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [song, setSong] = useState<Song | null>(null);
+  const [useTwoColumns, setUseTwoColumns] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,6 +46,9 @@ const CancionDetalle: React.FC = () => {
       try {
         const data = await getSongById(id, transposeOffset);
         setSong(data);
+        if (data.content.length > 1200) {
+            setUseTwoColumns(true); // Se auto-activa si la canción es larga
+          }
       } catch (err) {
         console.error("Error al cargar la canción:", err);
         setError('Error al obtener los detalles de la canción');
@@ -156,7 +160,6 @@ const CancionDetalle: React.FC = () => {
         <h1 className="detalle-title">{song.title}</h1>
         <p className="detalle-author">{song.author}</p>
 
-
         <div className="detalle-metadata">
           {song.video_link && (
             <a 
@@ -168,9 +171,22 @@ const CancionDetalle: React.FC = () => {
               ▶ Ver Video de Referencia
             </a>
           )}
-          <button onClick={() => window.print()} className="btn-secondary">
-            🖨️ Descargar PDF
-          </button>
+          
+          {/* NUEVO BLOQUE: Control de columnas y botón de impresión */}
+          <div className="cd-header-actions">
+            <label className="cd-checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={useTwoColumns} 
+                onChange={(e) => setUseTwoColumns(e.target.checked)} 
+                className="cd-checkbox-input"
+              />
+              2 Columnas
+            </label>
+            <button onClick={() => window.print()} className="btn-secondary">
+              🖨️ Descargar PDF
+            </button>
+          </div>
           
           {song.themes && song.themes.length > 0 && (
             <div className="metadata-themes-wrapper">
@@ -240,7 +256,7 @@ const CancionDetalle: React.FC = () => {
         )}
       </div>
 
-      <div className="lyric-content">
+      <div className={`lyric-content ${useTwoColumns ? 'two-columns' : ''}`}>
         {song.content}
       </div>
 

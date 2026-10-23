@@ -72,5 +72,6 @@ app.use('/api/auth', authLimiter, authRoutes); // Inyectamos el limitador estric
 app.use('/api/songs', songsRoutes);
 app.use('/api/setlists', setlistsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/themes', themesRoutes);
 
 export default app;

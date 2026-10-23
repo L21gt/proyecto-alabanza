@@ -14,7 +14,7 @@ const Repertorios: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const navigate = useNavigate();
-  const role = localStorage.getItem('userRole');
+  // const role = localStorage.getItem('userRole');
 
   const fetchSetlists = useCallback(async () => {
     try {
@@ -78,13 +78,13 @@ const Repertorios: React.FC = () => {
         <h2 className="repertorios-title">Gestor de Repertorios</h2>
         {/* Se sustituyó el estilo inline por una clase CSS dedicada */}
         <div className="repertorios-header-actions">
-          {/* BOTÓN AGREGADO PARA SUGERIR CANCIONES */}
+          {/* BOTÓN AGREGADO PARA SUGERIR CANCIONES
           <button 
             onClick={() => navigate('/cancion/nueva')} 
             className="btn-primary"
           >
             {role === 'Admin' ? '+ Agregar Canción al Catálogo' : '+ Sugerir Nueva Canción'}
-          </button>
+          </button> */}
           <button 
             onClick={() => navigate('/catalogo')} 
             className="btn-secondary"

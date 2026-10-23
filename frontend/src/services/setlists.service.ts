@@ -123,7 +123,7 @@ export const updateSetlistOrder = async (
 
 export const updateSetlistTheme = async (id: string | number, themeId: number | null): Promise<void> => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/setlists/${id}/theme`, {
+    const response = await fetch(`${API_URL}/${id}/theme`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

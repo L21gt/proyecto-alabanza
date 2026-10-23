@@ -105,7 +105,11 @@ const CancionForm: React.FC = () => {
         alert('Sugerencia enviada exitosamente. El administrador la revisará pronto.');
       }
       
-      navigate('/catalogo');
+      if (repertorioId) {
+        navigate(`/repertorios/${repertorioId}`);
+      } else {
+        navigate('/catalogo');
+      }
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -121,9 +125,19 @@ const CancionForm: React.FC = () => {
     <div className="form-page-container">
       <div className="form-card">
         <header className="form-header">
-          <button className="btn-back" onClick={() => navigate('/catalogo')} type="button">
-            &larr; Volver al Catálogo
-          </button>
+          <button 
+        type="button" 
+        className="btn-back" 
+        onClick={() => {
+          if (repertorioId) {
+            navigate(`/repertorios/${repertorioId}`);
+          } else {
+            navigate('/catalogo');
+          }
+        }}
+      >
+        &larr; Volver {repertorioId ? 'al repertorio' : 'al catálogo'}
+      </button>
           <h2>Proponer Canción</h2>
           <p>Llena los datos para agregar una nueva canción a la biblioteca.</p>
         </header>
@@ -214,7 +228,13 @@ const CancionForm: React.FC = () => {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={() => navigate('/catalogo')}>
+            <button type="button" className="btn-secondary" onClick={() => {
+              if (repertorioId) {
+                navigate(`/repertorios/${repertorioId}`);
+              } else {
+                navigate('/catalogo');
+              }
+            }}>
               Cancelar
             </button>
             
