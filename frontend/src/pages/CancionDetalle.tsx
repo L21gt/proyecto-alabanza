@@ -4,17 +4,21 @@ import { getSongById } from '../services/songs.service';
 import type { Song } from '../types';
 import './CancionDetalle.css';
 
+// Extendemos el tipo Song para que TypeScript reconozca la propiedad tags
+interface SongExtended extends Song {
+  tags?: Array<string | { name: string }>;
+}
+
 const CancionDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const repertorioId = searchParams.get('repertorioId');
 
-  const [song, setSong] = useState<Song | null>(null);
+  const [song, setSong] = useState<SongExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Simulación simple para transponer (opcional)
   const [currentKey, setCurrentKey] = useState<string>('');
 
   useEffect(() => {
@@ -23,14 +27,11 @@ const CancionDetalle: React.FC = () => {
         if (!id) return;
         const data = await getSongById(id);
         
-        // Si la API sí devuelve la canción, la mostramos y verificamos su estado
         setSong(data);
         setCurrentKey(data.original_key);
         
       } catch (err) {
         if (err instanceof Error) {
-          // INTERCEPCIÓN DEL ERROR: 
-          // Si el backend arrojó un error porque la canción está pendiente/oculta
           if (err.message.includes('403') || err.message.toLowerCase().includes('no encontrad') || err.message.toLowerCase().includes('detalle')) {
              setError('Esta canción se encuentra actualmente en revisión o guardada como borrador, por lo que su letra aún no es pública.');
           } else {
@@ -46,16 +47,14 @@ const CancionDetalle: React.FC = () => {
 
   if (loading) return <div className="loading-container">Cargando...</div>;
   
-  // RENDERIZADO DEL MENSAJE DE REVISIÓN
   if (error) {
     return (
-      <div className="error-message-container" style={{ textAlign: 'center', marginTop: '3rem', padding: '2rem', backgroundColor: '#1e293b', borderRadius: '8px' }}>
-        <h3 style={{ color: '#fbbf24' }}>⏳ Canción en Revisión</h3>
-        <p style={{ color: '#f8fafc', marginTop: '1rem', fontSize: '1.1rem' }}>{error}</p>
+      <div className="error-message-container cd-error-view">
+        <h3>⏳ Canción en Revisión</h3>
+        <p>{error}</p>
         <button 
-          className="btn-secondary" 
+          className="btn-secondary cd-error-btn" 
           onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')} 
-          style={{ marginTop: '2rem' }}
         >
           &larr; Volver
         </button>
@@ -71,15 +70,46 @@ const CancionDetalle: React.FC = () => {
         <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
           &larr; Volver
         </button>
-        <div className="cd-title-area" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <h2 style={{ margin: 0 }}>{song.title}</h2>
-          {song.version && <span className="cd-version-badge">{song.version}</span>}
-          
-          {/* INSIGNIA VISUAL si el backend sí permitió verla (ej. si el usuario es Admin) */}
-          {song.status === 'Pendiente' && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>En Revisión</span>}
-          {song.status === 'Borrador' && <span style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>Borrador</span>}
+        
+        {/* FILA DEL TÍTULO: Título a la izq, Botón a la derecha */}
+        <div className="cd-title-row">
+          <div>
+            <div className="cd-title-area">
+              <h2>{song.title}</h2>
+              {song.version && <span className="cd-version-badge">{song.version}</span>}
+              
+              {/* INSIGNIAS VISUALES */}
+              {song.status === 'Pendiente' && <span className="cd-status-badge cd-status-pending">En Revisión</span>}
+              {song.status === 'Borrador' && <span className="cd-status-badge cd-status-draft">Borrador</span>}
+            </div>
+            <p className="cd-author">{song.author}</p>
+            
+            {/* ETIQUETAS (Tags) tipadas correctamente sin 'any' */}
+            {song.tags && song.tags.length > 0 && (
+              <div className="cd-tags-container">
+                {song.tags.map((tag: string | { name: string }, index: number) => (
+                  <span key={index} className="cd-tag">
+                    {typeof tag === 'string' ? tag : tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* BOTÓN DE VIDEO */}
+          {song.video_link && (
+            <div>
+              <a 
+                href={song.video_link} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="cd-video-btn"
+              >
+                🎥 Ver en YouTube
+              </a>
+            </div>
+          )}
         </div>
-        <p className="cd-author">{song.author}</p>
       </header>
 
       <div className="cd-meta-bar">
@@ -100,15 +130,6 @@ const CancionDetalle: React.FC = () => {
       <div className="cd-content-area">
         <pre className="cd-lyrics">{song.content}</pre>
       </div>
-
-      {song.video_link && (
-        <div className="cd-video-section">
-          <h3>Referencia en Video</h3>
-          <a href={song.video_link} target="_blank" rel="noreferrer" className="btn-secondary">
-            🎥 Ver en YouTube
-          </a>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,475 +1,244 @@
 /* =========================================
-   1. VISTA DESKTOP (Normal)
+   ESTILOS DE DETALLE DE CANCIÓN (CancionDetalle.css)
 ========================================= */
-.detalle-container {
-  max-width: 900px; 
-  margin: 0 auto;
-  padding: 2rem; 
-  display: flex;
-  flex-direction: column;
-  /* CAMBIO: align-items a stretch para que el encabezado se alinee a la izquierda (borde natural) */
-  align-items: stretch; 
+
+.cancion-detalle-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: #1e293b; /* Fondo tarjeta oscura */
+  border-radius: 12px;
+  color: #f8fafc;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
-.btn-back {
-  margin-bottom: 1rem;
-  align-self: flex-start; /* Alinea el botón a la izquierda */
-  background-color: var(--text-secondary);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-back:hover {
-  opacity: 0.9;
-}
-
-.detalle-header {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1.5rem;
+/* --- Cabecera Alineada a la Izquierda --- */
+.cd-header {
+  text-align: left;
   margin-bottom: 2rem;
+  position: relative;
 }
 
-.detalle-title {
-  font-size: 2.5rem;
-  color: var(--text-primary);
+.cd-header .btn-back {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.cd-header .btn-back:hover {
+  color: #3b82f6;
+}
+
+/* Contenedor principal del título y botón de video (Flexbox) */
+.cd-title-row {
+  display: flex;
+  justify-content: space-between; /* Título a la izq, botón a la der */
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 0.5rem;
 }
 
-.detalle-author {
-  font-size: 1.2rem;
-  color: var(--text-secondary);
-}
-
-.controls-panel {
+.cd-title-area {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background-color: var(--bg-secondary);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
   flex-wrap: wrap;
+  gap: 12px;
 }
 
-.control-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.cd-title-area h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  color: #ffffff;
+  font-weight: 800;
 }
 
-.control-label {
-  font-weight: 500;
+/* Insignias de versión y estados (Pendiente/Borrador) */
+.cd-version-badge {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.btn-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background-color: var(--accent-color);
+.cd-status-badge {
   color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.cd-status-pending {
+  background-color: #f59e0b;
+}
+
+.cd-status-draft {
+  background-color: #6b7280;
+}
+
+.cd-author {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  margin: 0;
+  font-style: italic;
+}
+
+/* --- Etiquetas (Tags) --- */
+.cd-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cd-tag {
+  background-color: #334155;
+  color: #cbd5e1;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.cd-tag::before {
+  content: '#';
+  margin-right: 2px;
+  color: #94a3b8;
+}
+
+/* Botón de video en el encabezado */
+.cd-video-btn {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  white-space: nowrap; /* Evita que el texto del botón se parta */
+}
+
+.cd-video-btn:hover {
+  background-color: #cbd5e1;
+}
+
+/* --- Barra de Metadatos --- */
+.cd-meta-bar {
+  display: flex;
+  justify-content: flex-start; /* Alineado a la izquierda */
+  gap: 3rem;
+  background-color: #0f172a;
+  padding: 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 2.5rem;
+  border: 1px solid #334155;
+}
+
+.cd-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Texto interno a la izquierda */
+  gap: 4px;
+}
+
+.cd-meta-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.cd-meta-value {
   font-size: 1.2rem;
-  cursor: pointer;
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+/* --- Área de Letra y Acordes --- */
+.cd-content-area {
+  background-color: #0f172a;
+  padding: 3rem 2rem;
+  border-radius: 8px;
+  min-height: 400px;
+  border: 1px solid #334155;
   display: flex;
   justify-content: center;
-  align-items: center;
-  transition: opacity 0.2s;
+  overflow-x: auto;
 }
 
-.btn-circle:hover {
-  opacity: 0.8;
-}
-
-.btn-circle:disabled {
-  background-color: var(--border-color);
-  cursor: not-allowed;
-}
-
-.key-display {
-  font-size: 1.2rem;
-  font-weight: bold;
-  min-width: 3ch;
-  text-align: center;
-}
-
-.btn-restore {
-  padding: 0.3rem 0.8rem;
-  font-size: 0.9rem;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-restore:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.tempo-display {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.btn-edit {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-edit:hover {
-  opacity: 0.8;
-}
-
-.btn-delete-small {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  background-color: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-delete-small:hover {
-  background-color: #b91c1c;
-}
-
-/* =========================================
-   1. VISTA DESKTOP (Normal)
-========================================= */
-.lyric-content {
-  background-color: transparent !important;
-  color: inherit !important;
-  border: none !important;
-  padding: 0 !important;
-  font-size: 15pt !important;
-  line-height: 1.5 !important;
-  white-space: pre !important; 
-  overflow-x: auto !important;
+.cd-lyrics {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: #e2e8f0;
   
-  /* NUEVO CENTRADO DINÁMICO DEL BLOQUE DE LETRA */
-  width: max-content !important; /* El bloque se ajusta exactamente al ancho de la línea más larga */
-  max-width: 100% !important; 
-  margin: 0 auto !important; /* Centra el bloque entero en la pantalla */
-  text-align: left !important; /* Mantiene el texto alineado a la izquierda por dentro */
+  /* CORECCIONES DE ALINEACIÓN */
+  text-align: left;      
+  margin: 0 auto;        
+  display: inline-block; 
+  
+  white-space: pre;      
+  max-width: 100%;
 }
 
-/* =========================================
-   2. VISTA MÓVIL RESPONSIVA (Scroll garantizado)
-========================================= */
-@media (max-width: 768px) {
-  .lyric-content {
-    /* Mantiene pre y overflow-x: auto heredado de arriba */
-    font-size: 14pt !important; /* Ligeramente más pequeño para móvil */
-    padding-bottom: 1rem !important; /* Espacio para que el pulgar mueva la barra de scroll */
-  }
-}
-
-.loading-message,
-.not-found-message {
+/* --- Vista de Error / Revisión --- */
+.cd-error-view {
   text-align: center;
-  padding: 3rem;
-  color: var(--text-primary);
-}
-
-.detail-action-buttons {
-  margin-top: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-.btn-danger {
-  padding: 0.75rem 1.5rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
-}
-
-.btn-danger:hover {
-  background-color: #dc2626;
-}
-
-/* ========================================== */
-/* METADATOS DE LA CANCIÓN (Video y Etiquetas) */
-/* ========================================== */
-
-.detalle-metadata {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.metadata-video-btn {
-  background-color: transparent;
-  color: var(--text-secondary, #94a3b8);
-  border: 1px solid var(--border-color, #334155);
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.metadata-video-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary, #f8fafc);
-  border-color: var(--text-secondary, #94a3b8);
-}
-
-.metadata-themes-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.metadata-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary, #94a3b8);
-  font-weight: 600;
-}
-
-.metadata-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.metadata-badge {
-  background-color: rgba(59, 130, 246, 0.15); /* Tono azulado suave */
-  color: var(--accent-color, #3b82f6);
-  padding: 0.2rem 0.75rem;
-  border-radius: 9999px; /* Forma de píldora */
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-
-/* ========================================== */
-/* HISTORIAL DE CAMBIOS (AUDIT TRAIL - SPRINT 2) */
-/* ========================================== */
-
-.btn-history {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  background-color: transparent;
-  color: var(--text-secondary, #94a3b8);
-  border: 1px solid var(--border-color, #334155);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.btn-history:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary, #f8fafc);
-  border-color: var(--text-secondary, #94a3b8);
-}
-
-.audit-history-section {
-  margin-top: 2.5rem;
-  padding: 1.5rem;
-  background-color: var(--bg-secondary, #1e293b);
-  border: 1px solid var(--border-color, #334155);
+  margin-top: 3rem;
+  padding: 2rem;
+  background-color: #1e293b;
   border-radius: 8px;
 }
 
-.audit-history-title {
-  font-size: 1.25rem;
-  color: var(--text-primary, #f8fafc);
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color, #334155);
-  padding-bottom: 0.75rem;
+.cd-error-view h3 {
+  color: #fbbf24;
+  margin: 0;
 }
 
-.audit-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.cd-error-view p {
+  color: #f8fafc;
+  margin-top: 1rem;
+  font-size: 1.1rem;
 }
 
-.audit-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.85rem 1rem;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-left: 3px solid var(--accent-color, #3b82f6);
-  border-radius: 4px;
+.cd-error-btn {
+  margin-top: 2rem;
 }
 
-.audit-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
 
-.audit-action-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  background-color: rgba(59, 130, 246, 0.2);
-  color: var(--accent-color, #3b82f6);
-}
-
-.audit-date {
-  font-size: 0.8rem;
-  color: var(--text-secondary, #94a3b8);
-}
-
-.audit-user {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary, #f8fafc);
-}
-
-.audit-notes {
-  font-size: 0.85rem;
-  color: var(--text-secondary, #94a3b8);
-  margin: 0.25rem 0 0 0;
-}
-
-/* ===============================
-   MODO IMPRESIÓN / PDF CANCIÓN
-================================== */
-/* ===============================
-   MODO IMPRESIÓN / PDF CANCIÓN
-================================== */
-@media print {
-
-  /* Ajuste de márgenes de página para impresión estética y evitar cortes al borde */
-  @page {
-    margin: 2cm 1.5cm; /* 2cm arriba y abajo, 1.5cm a los lados */
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .cd-title-row {
+    flex-direction: column; /* En móviles apilamos el título y el botón */
+    align-items: flex-start;
   }
 
-  header, nav, .app-header,
-  .btn-back, .btn-secondary, .btn-restore,
-  .controls-panel, .detalle-metadata, 
-  .btn-history, .audit-history-section, .action-buttons {
-    display: none !important;
+  .cd-meta-bar {
+    gap: 1.5rem;
+    flex-wrap: wrap;
   }
-
-  body, html {
-    background: white !important;
-    background-color: white !important;
-    background-image: none !important; 
-    color: black !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  
+  .cd-content-area {
+    padding: 1.5rem 1rem; 
   }
-
-  .detalle-container {
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
+  
+  .cd-lyrics {
+    font-size: 1rem; 
   }
-
-  /* FORZAR COLOR NEGRO PURO PARA LOS TEXTOS EN IMPRESIÓN */
-  .detalle-title {
-    color: black !important;
-    font-weight: bold !important;
-  }
-
-  .detalle-author {
-    color: #333 !important; /* Un gris muy oscuro para contrastar levemente */
-  }
-
-  /* 4. Estilo formal para la cabecera (Título y Autor) */
-  .detalle-header {
-    border-bottom: 2px solid black !important; /* Línea negra fija */
-    padding-bottom: 0.5rem !important;
-    margin-bottom: 1.5rem !important;
-    page-break-after: avoid; 
-  }
-
-  .detalle-author {
-    color: #333 !important; /* Un gris muy oscuro para contrastar levemente */
-  }
-
-  .lyric-content {
-    white-space: pre-wrap !important; 
-    overflow-x: visible !important;
-    font-size: 12pt !important; 
-    
-    /* Centrado dinámico para 1 columna en PDF */
-    width: max-content !important; 
-    max-width: 100% !important;
-    margin: 0 auto !important; 
-    
-    /* Agregamos padding vertical interno para evitar que el texto choque 
-       con los bordes al hacer el salto a la página 2 */
-    padding-top: 1cm !important;
-    padding-bottom: 1cm !important;
-    
-    /* Prevenir separación de Acordes/Letras */
-    orphans: 3; 
-    widows: 3; 
-  }
-
-  /* Ajustes para 2 columnas en impresión */
-  .lyric-content.two-columns {
-    column-count: 2 !important;
-    column-gap: 4rem !important; 
-    font-size: 10pt !important; 
-    
-    /* Para 2 columnas necesitamos todo el ancho */
-    width: 100% !important; 
-    
-    /* BALANCE DINÁMICO: Iguala la altura de las columnas para distribuir el espacio en blanco */
-    column-fill: balance !important; 
-  }
-}
-
-/* =========================================
-   ACCIONES DE CABECERA Y CONTROLES (CancionDetalle)
-========================================= */
-.cd-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.cd-checkbox-label {
-  cursor: pointer;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  color: var(--text-secondary); /* Usa la variable de tu tema general si existe */
-}
-
-.cd-checkbox-input {
-  margin-right: 0.5rem;
 }
