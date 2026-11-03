@@ -56,28 +56,25 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
 
     // LÓGICA DE TEMAS (ETIQUETAS)
     if (themes && Array.isArray(themes) && themes.length > 0) {
-      // Tomamos solo las primeras 10 por seguridad extra, aunque ya bloqueamos arriba
       const safeThemes = themes.slice(0, 10);
       for (const themeName of safeThemes) {
         const normalizedTheme = themeName.trim().toLowerCase();
         let themeId: number;
+        
+        // SOLUCIÓN AL ERROR 42P10: Reemplazar ON CONFLICT con un SELECT previo
+        const checkThemeQuery = `SELECT id FROM themes WHERE name = $1`;
+        const existingTheme = await client.query(checkThemeQuery, [normalizedTheme]);
 
-        const insertThemeQuery = `
-          INSERT INTO themes (name) VALUES ($1)
-          ON CONFLICT (name) DO NOTHING
-          RETURNING id
-        `;
-        const themeResult = await client.query(insertThemeQuery, [normalizedTheme]);
-
-        if (themeResult.rows.length > 0) {
-          themeId = themeResult.rows[0].id;
-        } else {
-          const selectThemeQuery = `SELECT id FROM themes WHERE name = $1`;
-          const existingTheme = await client.query(selectThemeQuery, [normalizedTheme]);
+        if (existingTheme.rows.length > 0) {
           themeId = existingTheme.rows[0].id;
+        } else {
+          const insertThemeQuery = `
+            INSERT INTO themes (name) VALUES ($1) RETURNING id
+          `;
+          const themeResult = await client.query(insertThemeQuery, [normalizedTheme]);
+          themeId = themeResult.rows[0].id;
         }
 
-        // CORRECCIÓN: Quitamos el ON CONFLICT ya que la canción es nueva, no habrá duplicados de temas para ella.
         await client.query(
           `INSERT INTO song_themes (song_id, theme_id) VALUES ($1, $2)`,
           [newSong.id, themeId]
@@ -93,7 +90,9 @@ export const createSong = async (req: AuthRequest, res: Response): Promise<void>
         : initialStatus === 'Borrador'
         ? 'Borrador guardado exitosamente'
         : 'Canción propuesta enviada a revisión',
-      song: newSong
+      song: newSong,
+      // Retornamos el id explícitamente para que el frontend pueda enlazarlo al setlist
+      id: newSong.id
     });
 
   } catch (error) {

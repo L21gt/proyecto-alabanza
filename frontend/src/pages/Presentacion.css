@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1.5rem; /* Padding reducido para ganar espacio vertical */
+  padding: 0.5rem 1.5rem;
   background-color: #1e293b;
   border-bottom: 1px solid #334155;
 }
@@ -34,7 +34,7 @@
 .presentation-info-horizontal {
   display: flex;
   align-items: center;
-  gap: 1.5rem; /* Espaciado horizontal entre elementos */
+  gap: 1.5rem;
 }
 
 .presentation-title-horizontal {
@@ -71,7 +71,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  overflow: hidden; /* BLOQUEO TOTAL DE SCROLL */
+  
+  /* Habilitamos scroll vertical en el contenedor principal */
+  overflow-y: auto; 
+  /* Habilitamos scroll horizontal por si el contenido total excede el ancho de la pantalla */
+  overflow-x: auto; 
+  
   padding: 0 1rem;
   width: 100%;
 }
@@ -86,10 +91,11 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 30vh; /* Zona de clic amplia */
+  height: 30vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* Evita que las flechas se encojan si hay mucho texto */
 }
 
 .nav-arrow:hover:not(:disabled) {
@@ -105,28 +111,44 @@
 /* Contenedor central de los acordes */
 .presentation-chords-container {
   flex: 1;
-  height: 100%;
-  /* CLAVE: Usar 'block' en lugar de 'flex' evita que el centrado corte el texto superior */
-  display: block; 
-  padding: 2rem 3rem;
-  overflow-y: auto; /* Habilita el scroll vertical natural */
-  overflow-x: hidden;
+  /* Altura automática para permitir el scroll del padre */
+  height: 100%; 
+  min-height: 100%;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  /* Habilitar scroll horizontal interno si una línea es absurdamente larga */
+  overflow-x: auto; 
 }
 
 .presentation-chords {
   font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(1.1rem, 2vh, 1.5rem); 
-  line-height: 1.5;
-  white-space: pre-wrap;
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  font-size: 1.4rem; /* Reducido ligeramente para dar más espacio horizontal */
+  line-height: 1.6;
   
-  column-count: 2;
-  column-gap: 4rem;
-  column-rule: 1px dashed #334155;
-  height: auto; /* Permite que el texto dicte el tamaño total hacia abajo */
-  padding-bottom: 4rem; /* Añade un respiro al llegar al final del scroll */
+  /* PUNTO 2: PREVENIR DESBORDAMIENTO. Forzar scroll horizontal en lugar de salto de línea */
+  white-space: pre !important; 
+  
+  margin: 0 auto; 
+  padding-bottom: 2rem;
+  
+  /* PUNTO 3: COLUMNAS INTELIGENTES. No forzamos 2 columnas. 
+     Le damos un ancho ideal. Si sobra espacio, hace 2. Si no, se queda en 1. */
+  column-width: 45ch; /* Ancho cómodo para evitar que se divida prematuramente */
+  column-gap: 4rem; 
+  column-rule: 1px dashed rgba(255, 255, 255, 0.2); 
+  
+  max-width: 95%; 
+  
+  /* PUNTO 4: PREVENIR CORTES */
+  orphans: 3;
+  widows: 3;
+}
+
+/* Aplicar break-inside a nivel del contenedor principal del pre si es necesario */
+.presentation-chords-container > * {
+   break-inside: auto;
 }
 
 /* Loading & Error */
@@ -140,9 +162,51 @@
   color: white;
 }
 
-/* Si la pantalla es estrecha (como un iPad vertical o móvil), forzamos 1 sola columna */
+/* Si la pantalla es estrecha (iPad/Móvil), forzamos explícitamente 1 sola columna */
 @media (max-width: 900px) {
   .presentation-chords {
-    column-count: 1;
+    column-count: 1 !important;
   }
+}
+
+/* Controles de Tonalidad en Presentación */
+.presentation-key-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+}
+
+.btn-transpose {
+  background: var(--accent-color, #4a90e2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+}
+
+.btn-transpose:active {
+  transform: scale(0.9);
+}
+
+.btn-transpose:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.presentation-key-horizontal {
+  font-weight: bold;
+  color: #ffffff;
+  min-width: 90px;
+  text-align: center;
+  font-size: 1.1rem;
 }

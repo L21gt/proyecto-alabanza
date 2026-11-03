@@ -8,14 +8,36 @@ import { getThemes } from '../services/themes.service';
 import type { Setlist, Song, SetlistSong, Theme } from '../types';
 import './RepertorioDetalle.css';
 
+// Extendemos el tipo Setlist para que TypeScript reconozca los nuevos campos del dueño
+interface SetlistExtended extends Setlist {
+  owner_id?: number;
+  owner_name?: string;
+}
+
 const MUSICAL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const KANBAN_COLUMNS = ['Sin Asignar', 'Alabanza', 'Adoración', 'Ofrendas', 'Santa Cena'];
+// Actualizamos las columnas para que coincidan EXACTAMENTE con los valores que envía el nuevo selector en CancionForm
+const KANBAN_COLUMNS = ['Sin Asignar', 'ALABANZA', 'ADORACIÓN', 'OFRENDAS', 'MINISTRACIÓN', 'SANTA CENA'];
+
+// FUNCION DECODIFICADORA DEL TOKEN PARA EXTRAER EL ID
+const parseJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
 
 const RepertorioDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [setlist, setSetlist] = useState<Setlist | null>(null);
+  const [setlist, setSetlist] = useState<SetlistExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -27,6 +49,23 @@ const RepertorioDetalle: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<Record<number, string>>({});
   const [selectedGroups, setSelectedGroups] = useState<Record<number, string>>({});
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
+
+  // EXTRAER ID DIRECTAMENTE DEL TOKEN JWT EN VEZ DE BUSCAR UN LOCALSTORAGE QUE NO EXISTE
+  let currentUserId = 0;
+  const token = localStorage.getItem('token');
+  if (token) {
+    const decoded = parseJwt(token);
+    if (decoded && decoded.id) {
+      currentUserId = Number(decoded.id);
+    }
+  }
+
+  const userRole = localStorage.getItem('userRole') || 'Usuario';
+  
+  // Validación final
+  const isOwnerOrAdmin = setlist 
+    ? (userRole === 'Admin' || (currentUserId !== 0 && Number(setlist.owner_id) === currentUserId)) 
+    : false;
 
   const fetchSetlistDetails = useCallback(async () => {
     if (!id) return;
@@ -53,7 +92,7 @@ const RepertorioDetalle: React.FC = () => {
   useEffect(() => {
     const search = async () => {
       if (!debouncedSearchTerm.trim()) {
-        setSearchResults([]); 
+        setSearchResults([]); // Limpieza directa sin condiciones complejas
         return;
       }
       setIsSearching(true);
@@ -137,11 +176,21 @@ const RepertorioDetalle: React.FC = () => {
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
     if (!setlist || !setlist.songs || !id) return;
+    
+    // Si no tiene permisos, no hace nada visualmente ni envía petición
+    if (!isOwnerOrAdmin) {
+        alert("No tienes permisos para reordenar este repertorio.");
+        return;
+    }
 
     setIsUpdatingOrder(true);
 
+    // Búsqueda insensible a mayúsculas para evitar bugs al arrastrar
     const getSongsByCol = (col: string) => 
-      setlist.songs!.filter(s => col === 'Sin Asignar' ? !s.group_name : s.group_name === col);
+      setlist.songs!.filter(s => {
+          if (col === 'Sin Asignar') return !s.group_name;
+          return s.group_name && s.group_name.toUpperCase() === col.toUpperCase();
+      });
 
     type SetlistSongType = NonNullable<Setlist['songs']>[number];
 
@@ -183,16 +232,10 @@ const RepertorioDetalle: React.FC = () => {
 
   const isSetlistComplete = (): boolean => {
     if (!setlist?.songs || setlist.songs.length === 0) {
-      alert('Debes agregar canciones al repertorio primero.');
+      alert('El repertorio está vacío.');
       return false;
     }
-    const groupsPresent = setlist.songs.map(s => s.group_name).filter(Boolean);
-    const missing = ['Alabanza', 'Adoración', 'Ofrendas'].filter(g => !groupsPresent.includes(g));
-    
-    if (missing.length > 0) {
-      alert(`⚠️ Acción denegada. Faltan asignar canciones en: ${missing.join(', ')}`);
-      return false;
-    }
+    // Opcional: Puedes quitar esta restricción estricta si quieres permitir PDFs con solo 1 categoría
     return true;
   };
 
@@ -233,24 +276,31 @@ const RepertorioDetalle: React.FC = () => {
           <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
           <h2 className="rd-title">{setlist.name}</h2>
           {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
+          {/* NUEVO: Mostrar el autor del repertorio */}
+          <p className="rd-date" style={{ marginTop: '0.2rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
+              Creado por: {setlist.owner_name || 'Usuario Desconocido'} 
+              {!isOwnerOrAdmin && <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '5px' }}>(Modo Lectura)</span>}
+          </p>
         </div>
         
         <div className="rd-header-actions rd-header-actions-align">
           
-          {/* SELECTOR DE TEMAS */}
-          <div className="rd-theme-selector-container">
-            <label className="rd-theme-selector-label" style={{ fontWeight: 'bold', marginRight: '5px' }}>Tema PDF:</label>
-            <select 
-              className="rd-select-meta rd-theme-select" 
-              value={setlist.theme_id || ''} 
-              onChange={handleThemeChange}
-            >
-              <option value="">Fondo Blanco (Por defecto)</option>
-              {themes.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* SELECTOR DE TEMAS - SOLO VISIBLE SI TIENE PERMISOS */}
+          {isOwnerOrAdmin && (
+              <div className="rd-theme-selector-container">
+                <label className="rd-theme-selector-label" style={{ fontWeight: 'bold', marginRight: '5px' }}>Tema PDF:</label>
+                <select 
+                  className="rd-select-meta rd-theme-select" 
+                  value={setlist.theme_id || ''} 
+                  onChange={handleThemeChange}
+                >
+                  <option value="">Fondo Blanco (Por defecto)</option>
+                  {themes.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+          )}
 
           <button 
             className="btn-secondary rd-btn-print" 
@@ -271,61 +321,63 @@ const RepertorioDetalle: React.FC = () => {
               }
             }}
           >
-            ▶ Iniciar Presentación
+            ▶ Presentación
           </button>
         </div>
       </header>
 
-      <section className="rd-search-section">
-        {/* NUEVO BLOQUE: Título + Botón de Sugerir Canción integrados */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0 }}>Agregar Canciones</h3>
-          <button 
-            className="btn-primary" 
-            onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
-            title="¿No encuentras la canción? Envíala para revisión"
-          >
-            ➕ Sugerir Nueva Canción al Catálogo
-          </button>
-        </div>
+      {/* SECCIÓN DE BÚSQUEDA Y AGREGAR CANCIONES - SOLO VISIBLE PARA DUEÑO O ADMIN */}
+      {isOwnerOrAdmin && (
+          <section className="rd-search-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0 }}>Agregar Canciones</h3>
+              <button 
+                className="btn-primary" 
+                onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
+                title="¿No encuentras la canción? Envíala para revisión"
+              >
+                ➕ Sugerir Nueva Canción
+              </button>
+            </div>
 
-        <input 
-          type="text" 
-          className="rd-search-input" 
-          placeholder="Busca en el catálogo..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-        />
-        {isSearching && <p className="rd-helper-text">Buscando...</p>}
-        {searchResults.length > 0 && (
-          <div className="rd-search-results">
-            {searchResults.map(song => (
-              <div key={song.id} className="rd-result-card">
-                <div className="rd-result-info rd-result-info-layout">
-                  <strong 
-                    className="kanban-song-title-link"
-                    onClick={() => navigate(`/cancion/${song.id}?repertorioId=${id}`)}
-                  >
-                    {song.title}
-                  </strong>
-                  <span>{song.author}</span>
-                </div>
-                <div className="rd-result-actions">
-                  <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
-                    {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                  <select className="rd-select-meta rd-select-margin" value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
-                    {KANBAN_COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
-                  </select>
-                  <button className="btn-add rd-btn-margin" onClick={() => handleAddSong(song)}>Añadir</button>
-                </div>
+            <input 
+              type="text" 
+              className="rd-search-input" 
+              placeholder="Busca en el catálogo..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+            />
+            {isSearching && <p className="rd-helper-text">Buscando...</p>}
+            {searchResults.length > 0 && (
+              <div className="rd-search-results">
+                {searchResults.map(song => (
+                  <div key={song.id} className="rd-result-card">
+                    <div className="rd-result-info rd-result-info-layout">
+                      <strong 
+                        className="kanban-song-title-link"
+                        onClick={() => navigate(`/cancion/${song.id}?repertorioId=${id}`)}
+                      >
+                        {song.title}
+                      </strong>
+                      <span>{song.author}</span>
+                    </div>
+                    <div className="rd-result-actions">
+                      <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
+                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                      <select className="rd-select-meta rd-select-margin" value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
+                        {KANBAN_COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
+                      </select>
+                      <button className="btn-add rd-btn-margin" onClick={() => handleAddSong(song)}>Añadir</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            )}
+          </section>
+      )}
 
-      <hr className="rd-divider" />
+      {isOwnerOrAdmin && <hr className="rd-divider" />}
 
       <section className="rd-kanban-section">
         <div className="rd-kanban-header">
@@ -336,15 +388,22 @@ const RepertorioDetalle: React.FC = () => {
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="kanban-board">
             {KANBAN_COLUMNS.map(columnId => {
-              const columnSongs = setlist.songs?.filter(s => columnId === 'Sin Asignar' ? !s.group_name : s.group_name === columnId) || [];
+              // Búsqueda insensible a mayúsculas para asignar las tarjetas a sus columnas correctamente
+              const columnSongs = setlist.songs?.filter(s => {
+                  if (columnId === 'Sin Asignar') return !s.group_name;
+                  return s.group_name && s.group_name.toUpperCase() === columnId.toUpperCase();
+              }) || [];
               
               if (columnId === 'Sin Asignar' && columnSongs.length === 0) return null;
+              
+              // En modo View-Only ocultamos las columnas vacías, pero el dueño/admin SIEMPRE debe verlas
+              if (!isOwnerOrAdmin && columnSongs.length === 0) return null;
 
               return (
                 <div key={columnId} className={`kanban-column ${columnId === 'Sin Asignar' ? 'col-unassigned' : ''}`}>
                   <h4 className="kanban-column-title">{columnId} <span>{columnSongs.length}</span></h4>
                   
-                  <Droppable droppableId={columnId}>
+                  <Droppable droppableId={columnId} isDropDisabled={!isOwnerOrAdmin}>
                     {(provided, snapshot) => (
                       <div 
                         className={`kanban-droppable ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
@@ -352,7 +411,7 @@ const RepertorioDetalle: React.FC = () => {
                         {...provided.droppableProps}
                       >
                         {columnSongs.map((song: SetlistSong, index: number) => (
-                          <Draggable key={String(song.song_id)} draggableId={String(song.song_id)} index={index}>
+                          <Draggable key={String(song.song_id)} draggableId={String(song.song_id)} index={index} isDragDisabled={!isOwnerOrAdmin}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -367,18 +426,26 @@ const RepertorioDetalle: React.FC = () => {
                                   >
                                     {song.title}
                                   </strong>
-                                  <button onClick={() => handleRemoveSong(song.song_id)} className="btn-remove-card">&times;</button>
+                                  {isOwnerOrAdmin && (
+                                      <button onClick={() => handleRemoveSong(song.song_id)} className="btn-remove-card">&times;</button>
+                                  )}
                                 </div>
                                 <p className="kanban-card-author">{song.author}</p>
                                 
                                 <div className="kanban-card-footer">
-                                  <select 
-                                    className="rd-select-meta kanban-select"
-                                    value={song.transposed_key || song.original_key || ""} 
-                                    onChange={(e) => handleUpdateKey(song.song_id, e.target.value)}
-                                  >
-                                    {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                                  </select>
+                                  {isOwnerOrAdmin ? (
+                                      <select 
+                                        className="rd-select-meta kanban-select"
+                                        value={song.transposed_key || song.original_key || ""} 
+                                        onChange={(e) => handleUpdateKey(song.song_id, e.target.value)}
+                                      >
+                                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                                      </select>
+                                  ) : (
+                                      <span className="rd-select-meta kanban-select" style={{ cursor: 'default', background: 'transparent', border: 'none', paddingLeft: 0 }}>
+                                          Tono: <strong>{song.transposed_key || song.original_key}</strong>
+                                      </span>
+                                  )}
                                   <span className="rd-tempo">{song.tempo} BPM</span>
                                 </div>
                               </div>
@@ -413,8 +480,8 @@ const RepertorioDetalle: React.FC = () => {
         </div>
 
         <div className="pdf-body">
-          {['Alabanza', 'Adoración', 'Ofrendas', 'Santa Cena'].map(categoria => {
-            const cancionesEnCategoria = setlist.songs?.filter(s => s.group_name === categoria);
+          {KANBAN_COLUMNS.filter(col => col !== 'Sin Asignar').map(categoria => {
+            const cancionesEnCategoria = setlist.songs?.filter(s => s.group_name && s.group_name.toUpperCase() === categoria.toUpperCase());
             
             if (!cancionesEnCategoria || cancionesEnCategoria.length === 0) return null;
 

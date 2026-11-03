@@ -504,7 +504,15 @@
    MODO IMPRESIÓN / EXPORTAR PDF
 ================================== */
 .printable-setlist-pdf {
-  display: none;
+  display: none; /* Oculto en la web */
+  
+  /* Variables inyectadas por React para los Temas */
+  background: var(--theme-bg, white);
+  color: var(--theme-color, black);
+  font-family: var(--theme-font, inherit);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 @media print {
@@ -528,24 +536,35 @@
     color: black !important;
   }
   
-  /* Hacemos visible el contenedor de impresión y le quitamos posicionamiento absoluto */
+  /* Hacemos visible el contenedor de impresión y forzamos el centrado total */
   .printable-setlist-pdf {
     display: flex !important;
     flex-direction: column;
-    justify-content: center; /* ESTO CENTRA EL CONTENIDO VERTICALMENTE */
-    min-height: 95vh; /* Le decimos que ocupe casi toda la hoja para poder centrar */
+    justify-content: center;
+    align-items: center;
+    
+    /* CAMBIO CLAVE: Usar height en lugar de min-height para evitar desbordamiento */
+    height: 100vh !important; 
     width: 100%;
     padding: 0;
-    background-color: white;
-    color: black;
+    
+    /* Evitar que el fondo se repita en nuevas páginas accidentalmente */
+    background-repeat: no-repeat !important;
+    background-size: cover !important; /* Asegura que cubra la hoja sin deformarse */
+    page-break-after: avoid !important;
   }
 
+  /* El cuerpo interno donde van las canciones */
   .pdf-body {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Asegura que la lista <ul> quede en medio */
   }
 
   @page {
-    margin: 1.5cm; 
+    /* Ajusta los márgenes verticales para que no salte a la siguiente página tan rápido */
+    margin: 1cm 1.5cm; /* Margen superior/inferior más pequeño */ 
   }
 
   /* OBLIGA AL NAVEGADOR A IMPRIMIR FONDOS Y COLORES (Marcos/Temas) */
@@ -556,7 +575,7 @@
 
   /* Asegura que todos los textos hereden el color del tema y no se queden negros */
   .printable-setlist-pdf * {
-    color: inherit;
+    page-break-after: auto;
   }
 
   /* Centramos el título y la fecha */
@@ -692,17 +711,4 @@
 .rd-theme-select {
   padding: 0.5rem;
   min-width: 150px;
-}
-
-/* =========================================
-   APLICACIÓN DEL TEMA AL PDF IMPRIMIBLE
-========================================= */
-.printable-setlist-pdf {
-  /* Usamos las variables inyectadas por React, o caemos en blanco y negro */
-  background: var(--theme-bg, white);
-  color: var(--theme-color, black);
-  font-family: var(--theme-font, inherit);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
 }

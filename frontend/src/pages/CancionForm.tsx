@@ -24,10 +24,13 @@ const CancionForm: React.FC = () => {
     category: 'Alabanza',
     themes: '', // Lo manejaremos como texto separado por comas
     video_link: '',
-    content: ''
+    content: '',
+    // Nuevos campos exclusivos para cuando se agrega directo desde el repertorio
+    setlist_group: 'ALABANZA',
+    setlist_key: 'C'
   });
 
-  // Calculamos en tiempo real la cantidad de etiquetas válidas (sin contar espacios vacíos)
+  // Calculamos en tiempo real la cantidad de etiquetas válidas
   const currentThemesCount = formData.themes
     .split(',')
     .map(t => t.trim())
@@ -36,6 +39,17 @@ const CancionForm: React.FC = () => {
   const isThemesExceeded = currentThemesCount > 10;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    // Sincronizar automáticamente el tono del setlist si el usuario cambia el tono original 
+    // y aún no ha tocado el select de setlist_key (opcional, pero buena UX)
+    if (e.target.name === 'original_key' && formData.setlist_key === formData.original_key) {
+      setFormData({
+        ...formData,
+        original_key: e.target.value,
+        setlist_key: e.target.value
+      });
+      return;
+    }
+    
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -78,12 +92,13 @@ const CancionForm: React.FC = () => {
       const response = await createSong(songPayload);
       const createdSongId = response.id;
 
-      // LÓGICA DEL REPERTORIO AL VUELO
+      // LÓGICA DEL REPERTORIO AL VUELO CON GRUPO Y TONO PERSONALIZADO
       if (repertorioId && createdSongId) {
         try {
           await addSongToSetlist(repertorioId, {
             song_id: createdSongId,
-            transposed_key: formData.original_key,
+            transposed_key: formData.setlist_key, // Usamos el tono seleccionado para el setlist
+            group_name: formData.setlist_group,   // Usamos el grupo seleccionado
             sort_order: 999 
           });
           
@@ -92,11 +107,11 @@ const CancionForm: React.FC = () => {
           return;
         } catch (linkErr) {
           console.error("Error al enlazar al repertorio:", linkErr);
-          alert('La canción se guardó correctamente, pero hubo un error al enlazarla a tu lista.');
+          alert('La canción se guardó correctamente, pero hubo un error al enlazarla a tu lista. (Verifica si eres el dueño del repertorio)');
         }
       }
 
-      // Flujo de notificación según el estado editorial resultante
+      // Flujo de notificación si no viene de un repertorio
       if (targetStatus === 'Borrador') {
         alert('Borrador guardado exitosamente. No será visible en el catálogo público.');
       } else if (role === 'Admin') {
@@ -145,6 +160,41 @@ const CancionForm: React.FC = () => {
         {error && <div className="error-banner">{error}</div>}
 
         <form onSubmit={(e) => handleSave(e)} className="song-form">
+          
+          {/* SECCIÓN ESPECIAL SI VENIMOS DESDE UN REPERTORIO */}
+          {repertorioId && (
+            <div className="form-group full-width" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--accent-color)' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--accent-color)' }}>Opciones para el Repertorio</h3>
+              <div className="form-grid" style={{ marginBottom: 0 }}>
+                <div className="form-group">
+                  <label htmlFor="setlist_group">Grupo en el Repertorio *</label>
+                  <select id="setlist_group" name="setlist_group" value={formData.setlist_group} onChange={handleChange}>
+                    <option value="ALABANZA">Alabanza</option>
+                    <option value="ADORACIÓN">Adoración</option>
+                    <option value="OFRENDAS">Ofrendas</option>
+                    <option value="MINISTRACIÓN">Ministración</option>
+                    <option value="SANTA CENA">Santa Cena</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="setlist_key">Tono a tocar en vivo *</label>
+                  <select id="setlist_key" name="setlist_key" value={formData.setlist_key} onChange={handleChange}>
+                    <optgroup label="Mayores">
+                      {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
+                        <option key={`live-${key}`} value={key}>{key}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Menores">
+                      {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(key => (
+                        <option key={`live-${key}`} value={key}>{key}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="form-grid">
             <div className="form-group">
               <label htmlFor="title">Título de la Canción *</label>
@@ -162,16 +212,16 @@ const CancionForm: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="original_key">Tonalidad Original *</label>
+              <label htmlFor="original_key">Tonalidad Original (Estudio) *</label>
               <select id="original_key" name="original_key" value={formData.original_key} onChange={handleChange}>
                 <optgroup label="Mayores">
                   {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(key => (
-                    <option key={key} value={key}>{key}</option>
+                    <option key={`orig-${key}`} value={key}>{key}</option>
                   ))}
                 </optgroup>
                 <optgroup label="Menores">
                   {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(key => (
-                    <option key={key} value={key}>{key}</option>
+                    <option key={`orig-${key}`} value={key}>{key}</option>
                   ))}
                 </optgroup>
               </select>
@@ -183,7 +233,7 @@ const CancionForm: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="category">Categoría *</label>
+              <label htmlFor="category">Estilo *</label>
               <select id="category" name="category" value={formData.category} onChange={handleChange}>
                 <option value="Alabanza">Alabanza (Rápida)</option>
                 <option value="Adoracion">Adoración (Lenta)</option>

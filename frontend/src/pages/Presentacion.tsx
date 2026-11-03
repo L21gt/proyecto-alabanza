@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSetlistById } from '../services/setlists.service';
 import { getSongById } from '../services/songs.service'; 
-import type { Song } from '../types'; // Eliminamos 'Setlist' para borrar el error
-import './Presentacion.css'; // NOTA: Crearemos este archivo en el siguiente paso
+import type { Song } from '../types';
+import './Presentacion.css';
 
 interface SongDetails extends Song {
   transposed_key?: string;
@@ -18,9 +18,12 @@ const Presentacion: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Nuevo estado para controlar la transposición en vivo
+  const [transposeOffset, setTransposeOffset] = useState(0);
 
   useEffect(() => {
-    let isMounted = true; // Previene actualizaciones de estado si el componente se desmonta
+    let isMounted = true;
 
     const loadPresentation = async () => {
       if (!id) return;
@@ -29,12 +32,14 @@ const Presentacion: React.FC = () => {
         const data = await getSetlistById(id);
 
         if (data.songs && data.songs.length > 0) {
+          // Cargamos las canciones pasando el transposeOffset actual
           const songsWithContent = await Promise.all(
             data.songs.map(async (setlistSong: { song_id: number | string; transposed_key?: string; group_name?: string }) => {
-              const songData = await getSongById(String(setlistSong.song_id));
+              const songData = await getSongById(String(setlistSong.song_id), transposeOffset);
               return {
                 ...songData,
-                transposed_key: setlistSong.transposed_key,
+                // Si hay un tono transpuesto guardado en el setlist, lo usamos como base, sino el original
+                transposed_key: setlistSong.transposed_key || songData.original_key,
                 group_name: setlistSong.group_name
               };
             })
@@ -53,9 +58,14 @@ const Presentacion: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, transposeOffset]); // Agregamos transposeOffset como dependencia para recargar al cambiar el tono
 
-    // Controles de navegación envueltos en useCallback para quitar el error de dependencias
+  // Restablecer el offset a 0 cuando el usuario cambia de canción
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTransposeOffset(0);
+  }, [currentIndex]);
+
   const handleNext = useCallback(() => {
     setCurrentIndex(prev => (prev < fullSongs.length - 1 ? prev + 1 : prev));
   }, [fullSongs.length]);
@@ -63,6 +73,10 @@ const Presentacion: React.FC = () => {
   const handlePrev = useCallback(() => {
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : prev));
   }, []);
+
+  const handleTranspose = (amount: number) => {
+    setTransposeOffset(prev => prev + amount);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -74,7 +88,7 @@ const Presentacion: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, id, navigate]);
 
-  if (loading) return <div className="presentation-loading">Cargando setlist...</div>;
+  if (loading && fullSongs.length === 0) return <div className="presentation-loading">Cargando setlist...</div>;
   if (error) return <div className="presentation-error">{error}</div>;
   if (fullSongs.length === 0) return <div className="presentation-error">No hay canciones para presentar.</div>;
 
@@ -82,9 +96,11 @@ const Presentacion: React.FC = () => {
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === fullSongs.length - 1;
 
+  // Calculamos el tono a mostrar en pantalla basado en lo que devuelve la API tras aplicar el offset
+  const displayKey = currentSong.original_key;
+
   return (
     <div className="presentation-layout">
-      {/* Barra superior horizontal y compacta */}
       <header className="presentation-header-horizontal">
         <button className="btn-exit-presentation" onClick={() => navigate(`/repertorios/${id}`)}>
           ✕ Salir
@@ -93,7 +109,13 @@ const Presentacion: React.FC = () => {
         <div className="presentation-info-horizontal">
           <span className="presentation-badge-group">{currentSong.group_name || 'Sin Asignar'}</span>
           <h2 className="presentation-title-horizontal">{currentSong.title}</h2>
-          <span className="presentation-key-horizontal">Tono: {currentSong.transposed_key}</span>
+          
+          {/* CONTROL DE TRANSPOSICIÓN EN VIVO */}
+          <div className="presentation-key-controls">
+            <button className="btn-transpose" onClick={() => handleTranspose(-1)} disabled={loading}>-</button>
+            <span className="presentation-key-horizontal">Tono: {displayKey}</span>
+            <button className="btn-transpose" onClick={() => handleTranspose(1)} disabled={loading}>+</button>
+          </div>
         </div>
         
         <div className="presentation-counter">
@@ -101,7 +123,6 @@ const Presentacion: React.FC = () => {
         </div>
       </header>
 
-      {/* Área central con flechas de navegación a los lados */}
       <main className="presentation-body-with-arrows">
         <button 
           className="nav-arrow" 

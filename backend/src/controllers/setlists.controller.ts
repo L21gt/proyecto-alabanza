@@ -33,7 +33,14 @@ export const createSetlist = async (req: Request, res: Response): Promise<void> 
 
 export const getSetlists = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await pool.query('SELECT * FROM setlists ORDER BY created_at DESC');
+    // ACTUALIZADO: Obtenemos también la información del usuario dueño del repertorio
+    const query = `
+      SELECT s.*, u.name as owner_name 
+      FROM setlists s
+      LEFT JOIN users u ON s.user_id = u.id
+      ORDER BY s.created_at DESC
+    `;
+    const result = await pool.query(query);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Error al obtener repertorios:', error);
@@ -44,15 +51,18 @@ export const getSetlists = async (req: Request, res: Response): Promise<void> =>
 export const getSetlistById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   try {
-    // ACTUALIZADO: Hacemos un LEFT JOIN para traer los datos del tema
+    // ACTUALIZADO: Traemos información del tema Y del usuario creador (dueño)
     const query = `
       SELECT s.*, 
              t.name as theme_name, 
              t.background_style as theme_background_style, 
              t.text_color as theme_text_color, 
-             t.font_family as theme_font_family
+             t.font_family as theme_font_family,
+             u.name as owner_name,
+             u.id as owner_id
       FROM setlists s
       LEFT JOIN themes t ON s.theme_id = t.id
+      LEFT JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
     `;
     const setlistRes = await pool.query(query, [id]);
@@ -83,7 +93,7 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
 
 export const addSongToSetlist = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { song_id, transposed_key, sort_order, group_name } = req.body; // <-- Agregamos group_name
+  const { song_id, transposed_key, sort_order, group_name } = req.body;
   const user = (req as any).user as AuthUser;
 
   // Validación básica para evitar queries nulos
@@ -100,7 +110,10 @@ export const addSongToSetlist = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+    // CORRECCIÓN PARA PERMITIR A USUARIOS ESTÁNDAR AGREGAR CANCIONES A SUS PROPIOS REPERTORIOS
+    // Si el usuario es el dueño (user_id === user.id) se le permite, si no lo es, pero es Admin, también.
+    // Si no es dueño Y no es Admin, se bloquea.
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
@@ -138,7 +151,8 @@ export const removeSongFromSetlist = async (req: Request, res: Response): Promis
       return;
     }
 
-    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+    // CORRECCIÓN RBAC
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
@@ -163,7 +177,8 @@ export const deleteSetlist = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+    // CORRECCIÓN RBAC
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para eliminar este repertorio' });
       return;
     }
@@ -194,7 +209,8 @@ export const reorderSetlistSongs = async (req: Request, res: Response): Promise<
       return;
     }
 
-    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+    // CORRECCIÓN RBAC
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
@@ -241,7 +257,8 @@ export const updateSetlistTheme = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    if (user.role !== 'Admin' && setlistRes.rows[0].user_id !== user.id) {
+    // CORRECCIÓN RBAC
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }

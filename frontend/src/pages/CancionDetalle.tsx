@@ -1,295 +1,113 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getSongById, deleteSong } from '../services/songs.service';
-import { getSetlistById } from '../services/setlists.service';
-import type { Song, Setlist } from '../types';
+import { getSongById } from '../services/songs.service';
+import type { Song } from '../types';
 import './CancionDetalle.css';
-
-// Interfaz para tipar los registros de auditoría devueltos por /api/songs/:id/history
-interface AuditLog {
-  id: number;
-  action: string;
-  previous_status?: string;
-  new_status?: string;
-  notes?: string;
-  created_at: string;
-  user_name: string;
-  user_email?: string;
-}
 
 const CancionDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
   const [searchParams] = useSearchParams();
   const repertorioId = searchParams.get('repertorioId');
-  const [setlist, setSetlist] = useState<Setlist | null>(null);
-  const [song, setSong] = useState<Song | null>(null);
-  const [useTwoColumns, setUseTwoColumns] = useState(false);
 
+  const [song, setSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [transposeOffset, setTransposeOffset] = useState(0);
 
-  // ESTADOS DEL HISTORIAL DE AUDITORÍA (Sprint 2)
-  const [showHistory, setShowHistory] = useState(false);
-  const [auditHistory, setAuditHistory] = useState<AuditLog[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-
-  // Validación de control de acceso en interfaz (RBAC)
-  const userRole = localStorage.getItem('userRole');
+  // Simulación simple para transponer (opcional)
+  const [currentKey, setCurrentKey] = useState<string>('');
 
   useEffect(() => {
     const fetchSong = async () => {
-      if (!id) return;
-      setLoading(true);
       try {
-        const data = await getSongById(id, transposeOffset);
+        if (!id) return;
+        const data = await getSongById(id);
+        
+        // Si la API sí devuelve la canción, la mostramos y verificamos su estado
         setSong(data);
-        if (data.content.length > 1200) {
-            setUseTwoColumns(true); // Se auto-activa si la canción es larga
-          }
+        setCurrentKey(data.original_key);
+        
       } catch (err) {
-        console.error("Error al cargar la canción:", err);
-        setError('Error al obtener los detalles de la canción');
+        if (err instanceof Error) {
+          // INTERCEPCIÓN DEL ERROR: 
+          // Si el backend arrojó un error porque la canción está pendiente/oculta
+          if (err.message.includes('403') || err.message.toLowerCase().includes('no encontrad') || err.message.toLowerCase().includes('detalle')) {
+             setError('Esta canción se encuentra actualmente en revisión o guardada como borrador, por lo que su letra aún no es pública.');
+          } else {
+             setError(err.message);
+          }
+        }
       } finally {
         setLoading(false);
       }
     };
-
     fetchSong();
-  }, [id, transposeOffset]);
+  }, [id]);
 
-  // Cargar datos del repertorio si la canción se abrió desde uno
-  useEffect(() => {
-    const fetchSetlistTheme = async () => {
-      if (!repertorioId) return;
-      try {
-        const data = await getSetlistById(repertorioId);
-        setSetlist(data);
-      } catch (err) {
-        console.error("Error al cargar el tema del repertorio:", err);
-      }
-    };
-    fetchSetlistTheme();
-  }, [repertorioId]);
-
-  // Obtención asíncrona de la línea de tiempo de auditoría
-  const handleToggleHistory = async () => {
-    if (!id) return;
-    
-    // Si ya está abierto, simplemente lo ocultamos
-    if (showHistory) {
-      setShowHistory(false);
-      return;
-    }
-
-    setLoadingHistory(true);
-    try {
-      const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      const response = await fetch(`${apiUrl}/songs/${id}/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('No se pudo cargar el historial');
-      
-      const data = await response.json();
-      setAuditHistory(data.history || []);
-      setShowHistory(true);
-    } catch (err) {
-      console.error("Error al obtener historial de auditoría:", err);
-      alert("Hubo un problema al cargar el historial de cambios.");
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const handleTranspose = (amount: number) => {
-    setTransposeOffset(prev => prev + amount);
-  };
-
-  // Manejador de eliminación permanente del recurso
-  const handleDeleteDirect = async () => {
-    if (!id) return;
-
-    const confirmDelete = window.confirm('¿Está seguro de que desea eliminar esta canción?');
-    if (!confirmDelete) return;
-
-    try {
-      await deleteSong(id);
-      navigate('/catalogo');
-    } catch (err) {
-      console.error("Error al eliminar:", err);
-      setError('Ocurrió un error al intentar eliminar la canción.');
-    }
-  };
-
-  if (loading && !song) return <div className="loading-message">Cargando canción...</div>;
-  if (error) return <div className="error-message">{error}</div>;
-  if (!song) return <div className="not-found-message">Canción no encontrada</div>;
+  if (loading) return <div className="loading-container">Cargando...</div>;
+  
+  // RENDERIZADO DEL MENSAJE DE REVISIÓN
+  if (error) {
+    return (
+      <div className="error-message-container" style={{ textAlign: 'center', marginTop: '3rem', padding: '2rem', backgroundColor: '#1e293b', borderRadius: '8px' }}>
+        <h3 style={{ color: '#fbbf24' }}>⏳ Canción en Revisión</h3>
+        <p style={{ color: '#f8fafc', marginTop: '1rem', fontSize: '1.1rem' }}>{error}</p>
+        <button 
+          className="btn-secondary" 
+          onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')} 
+          style={{ marginTop: '2rem' }}
+        >
+          &larr; Volver
+        </button>
+      </div>
+    );
+  }
+  
+  if (!song) return <div className="error-message-container">Canción no encontrada</div>;
 
   return (
-    <div 
-      className="detalle-container"
-      style={{
-        ['--theme-bg' as string]: setlist?.theme_background_style || 'white',
-        ['--theme-color' as string]: setlist?.theme_text_color || 'black',
-        ['--theme-font' as string]: setlist?.theme_font_family || 'inherit',
-      }}
-    >
-      {repertorioId ? (
-        <button 
-          className="btn-back" 
-          onClick={() => navigate(`/repertorios/${repertorioId}`)}
-        >
-          &larr; Volver al repertorio
+    <div className="cancion-detalle-container">
+      <header className="cd-header">
+        <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
+          &larr; Volver
         </button>
-      ) : (
-        <button 
-          className="btn-back" 
-          onClick={() => navigate('/catalogo')}
-        >
-          &larr; Volver al catálogo
-        </button>
-      )}
-
-      <div className="detalle-header">
-        <h1 className="detalle-title">{song.title}</h1>
-        <p className="detalle-author">{song.author}</p>
-
-        <div className="detalle-metadata">
-          {song.video_link && (
-            <a 
-              href={song.video_link} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="metadata-video-btn"
-            >
-              ▶ Ver Video de Referencia
-            </a>
-          )}
+        <div className="cd-title-area" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ margin: 0 }}>{song.title}</h2>
+          {song.version && <span className="cd-version-badge">{song.version}</span>}
           
-          {/* NUEVO BLOQUE: Control de columnas y botón de impresión */}
-          <div className="cd-header-actions">
-            <label className="cd-checkbox-label">
-              <input 
-                type="checkbox" 
-                checked={useTwoColumns} 
-                onChange={(e) => setUseTwoColumns(e.target.checked)} 
-                className="cd-checkbox-input"
-              />
-              2 Columnas
-            </label>
-            <button onClick={() => window.print()} className="btn-secondary">
-              🖨️ Descargar PDF
-            </button>
-          </div>
-          
-          {song.themes && song.themes.length > 0 && (
-            <div className="metadata-themes-wrapper">
-              <span className="metadata-label">Etiquetas:</span>
-              <div className="metadata-tags">
-                {song.themes.map((theme, i) => (
-                  <span key={i} className="metadata-badge">
-                    {theme}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* INSIGNIA VISUAL si el backend sí permitió verla (ej. si el usuario es Admin) */}
+          {song.status === 'Pendiente' && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>En Revisión</span>}
+          {song.status === 'Borrador' && <span style={{ backgroundColor: '#6b7280', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>Borrador</span>}
+        </div>
+        <p className="cd-author">{song.author}</p>
+      </header>
+
+      <div className="cd-meta-bar">
+        <div className="cd-meta-item">
+          <span className="cd-meta-label">Tono:</span>
+          <span className="cd-meta-value">{currentKey}</span>
+        </div>
+        <div className="cd-meta-item">
+          <span className="cd-meta-label">Tempo:</span>
+          <span className="cd-meta-value">{song.tempo ? `${song.tempo} BPM` : 'N/A'}</span>
+        </div>
+        <div className="cd-meta-item">
+          <span className="cd-meta-label">Categoría:</span>
+          <span className="cd-meta-value">{song.category}</span>
         </div>
       </div>
 
-      <div className="controls-panel">
-        <div className="control-group">
-          <span className="control-label">Tonalidad:</span>
-          <button className="btn-circle" onClick={() => handleTranspose(-1)} disabled={loading}>-</button>
-          <span className="key-display">{song.original_key}</span>
-          <button className="btn-circle" onClick={() => handleTranspose(1)} disabled={loading}>+</button>
+      <div className="cd-content-area">
+        <pre className="cd-lyrics">{song.content}</pre>
+      </div>
+
+      {song.video_link && (
+        <div className="cd-video-section">
+          <h3>Referencia en Video</h3>
+          <a href={song.video_link} target="_blank" rel="noreferrer" className="btn-secondary">
+            🎥 Ver en YouTube
+          </a>
         </div>
-        
-        {transposeOffset !== 0 && (
-          <button 
-            className="btn-restore" 
-            onClick={() => setTransposeOffset(0)}
-            disabled={loading}
-          >
-            Restaurar Original
-          </button>
-        )}
-        
-        <span className="tempo-display">
-          Tempo: {song.tempo} BPM
-        </span>
-
-        {/* BOTÓN AGREGADO PARA VISUALIZAR EL HISTORIAL DE CAMBIOS */}
-        <button 
-          className="btn-history"
-          onClick={handleToggleHistory}
-          disabled={loadingHistory}
-          title="Ver registro cronológico de creaciones y ediciones"
-        >
-          {loadingHistory ? 'Cargando...' : showHistory ? '▲ Ocultar Historial de cambios' : '📜 Ver el Historial de Cambios'}
-        </button>
-
-        {userRole === 'Admin' && (
-          <div className="action-buttons">
-            <button 
-              className="btn-edit" 
-              onClick={() => navigate(`/cancion/${id}/editar`)}
-              disabled={loading}
-            >
-              Editar
-            </button>
-
-            <button 
-              className="btn-delete-small" 
-              onClick={handleDeleteDirect}
-              disabled={loading}
-            >
-              Eliminar
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className={`lyric-content ${useTwoColumns ? 'two-columns' : ''}`}>
-        {song.content}
-      </div>
-
-      {/* SECCIÓN DESPLEGABLE DEL HISTORIAL DE CAMBIOS (AUDIT TRAIL) */}
-      {showHistory && (
-        <section className="audit-history-section">
-          <h3 className="audit-history-title">Historial de Auditoría de la Canción</h3>
-          
-          {auditHistory.length === 0 ? (
-            <p className="audit-notes">No hay registros de cambios para esta canción todavía.</p>
-          ) : (
-            <div className="audit-timeline">
-              {auditHistory.map((log) => (
-                <div key={log.id} className="audit-item">
-                  <div className="audit-item-header">
-                    <span className="audit-action-badge">{log.action}</span>
-                    <span className="audit-date">
-                      {new Date(log.created_at).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                  <span className="audit-user">Responsable: {log.user_name}</span>
-                  {log.notes && <p className="audit-notes">{log.notes}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       )}
     </div>
   );

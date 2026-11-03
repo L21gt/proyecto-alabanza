@@ -150,7 +150,7 @@ SELECT 'Clásico Blanco', 'none', '#000000', 'Arial, sans-serif'
 WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Clásico Blanco');
 
 INSERT INTO themes (name, background_style, text_color, font_family)
-SELECT 'Pergamino Elegante', 'url("https://www.transparenttextures.com/patterns/cream-paper.png")', '#2c1e16', '"Georgia", serif'
+SELECT 'Pergamino Elegante', 'url("/pergamino.png")', '#2c1e16', '"Georgia", serif'
 WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Pergamino Elegante');
 
 INSERT INTO themes (name, background_style, text_color, font_family)
