@@ -4,9 +4,9 @@ import { getSongById } from '../services/songs.service';
 import type { Song } from '../types';
 import './CancionDetalle.css';
 
-// Extendemos el tipo Song para que TypeScript reconozca la propiedad tags
+// Interfaz limpia: el backend ahora enviará un array de strings gracias a la tabla tags
 interface SongExtended extends Song {
-  tags?: Array<string | { name: string }>;
+  tags?: string[];
 }
 
 const CancionDetalle: React.FC = () => {
@@ -18,18 +18,18 @@ const CancionDetalle: React.FC = () => {
   const [song, setSong] = useState<SongExtended | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [currentKey, setCurrentKey] = useState<string>('');
+  
+  // ESTADO PARA CONTROLAR 1 o 2 COLUMNAS AL IMPRIMIR
+  const [printColumns, setPrintColumns] = useState<1 | 2>(1);
 
   useEffect(() => {
     const fetchSong = async () => {
       try {
         if (!id) return;
         const data = await getSongById(id);
-        
         setSong(data);
         setCurrentKey(data.original_key);
-        
       } catch (err) {
         if (err instanceof Error) {
           if (err.message.includes('403') || err.message.toLowerCase().includes('no encontrad') || err.message.toLowerCase().includes('detalle')) {
@@ -64,6 +64,20 @@ const CancionDetalle: React.FC = () => {
   
   if (!song) return <div className="error-message-container">Canción no encontrada</div>;
 
+  const renderTags = () => {
+    if (!song.tags || song.tags.length === 0) return null;
+
+    return (
+      <div className="cd-tags-container">
+        {song.tags.map((tag: string, index: number) => {
+          const tagText = tag.trim();
+          if (!tagText) return null;
+          return <span key={index} className="cd-tag">{tagText}</span>;
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="cancion-detalle-container">
       <header className="cd-header">
@@ -71,44 +85,40 @@ const CancionDetalle: React.FC = () => {
           &larr; Volver
         </button>
         
-        {/* FILA DEL TÍTULO: Título a la izq, Botón a la derecha */}
         <div className="cd-title-row">
           <div>
             <div className="cd-title-area">
               <h2>{song.title}</h2>
               {song.version && <span className="cd-version-badge">{song.version}</span>}
-              
-              {/* INSIGNIAS VISUALES */}
               {song.status === 'Pendiente' && <span className="cd-status-badge cd-status-pending">En Revisión</span>}
               {song.status === 'Borrador' && <span className="cd-status-badge cd-status-draft">Borrador</span>}
             </div>
             <p className="cd-author">{song.author}</p>
-            
-            {/* ETIQUETAS (Tags) tipadas correctamente sin 'any' */}
-            {song.tags && song.tags.length > 0 && (
-              <div className="cd-tags-container">
-                {song.tags.map((tag: string | { name: string }, index: number) => (
-                  <span key={index} className="cd-tag">
-                    {typeof tag === 'string' ? tag : tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
+            {renderTags()}
           </div>
 
-          {/* BOTÓN DE VIDEO */}
-          {song.video_link && (
-            <div>
-              <a 
-                href={song.video_link} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="cd-video-btn"
-              >
+          <div className="cd-actions-right">
+            {/* SELECTOR DE COLUMNAS PARA IMPRESIÓN */}
+            <select 
+              className="print-controls"
+              style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#e2e8f0', fontWeight: 'bold' }}
+              value={printColumns}
+              onChange={(e) => setPrintColumns(Number(e.target.value) as 1 | 2)}
+            >
+              <option value={1}>📄 1 Columna</option>
+              <option value={2}>📖 2 Columnas</option>
+            </select>
+
+            <button onClick={() => window.print()} className="cd-print-btn">
+              🖨️ Imprimir PDF
+            </button>
+            
+            {song.video_link && (
+              <a href={song.video_link} target="_blank" rel="noreferrer" className="cd-video-btn">
                 🎥 Ver en YouTube
               </a>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
@@ -128,7 +138,10 @@ const CancionDetalle: React.FC = () => {
       </div>
 
       <div className="cd-content-area">
-        <pre className="cd-lyrics">{song.content}</pre>
+        {/* APLICAMOS LA CLASE CONDICIONAL PARA 2 COLUMNAS */}
+        <pre className={`cd-lyrics ${printColumns === 2 ? 'print-two-columns' : ''}`}>
+          {song.content}
+        </pre>
       </div>
     </div>
   );

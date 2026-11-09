@@ -8,7 +8,6 @@ const CancionForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  // Detectamos si la URL incluye un ID de repertorio: /cancion/nueva?repertorioId=5
   const repertorioId = searchParams.get('repertorioId'); 
   const role = localStorage.getItem('userRole');
   
@@ -22,25 +21,21 @@ const CancionForm: React.FC = () => {
     original_key: 'C',
     tempo: '',
     category: 'Alabanza',
-    themes: '', // Lo manejaremos como texto separado por comas
+    tags: '', // CAMBIO: Usamos 'tags'
     video_link: '',
     content: '',
-    // Nuevos campos exclusivos para cuando se agrega directo desde el repertorio
     setlist_group: 'ALABANZA',
     setlist_key: 'C'
   });
 
-  // Calculamos en tiempo real la cantidad de etiquetas válidas
-  const currentThemesCount = formData.themes
+  const currentTagsCount = formData.tags
     .split(',')
     .map(t => t.trim())
     .filter(t => t.length > 0).length;
     
-  const isThemesExceeded = currentThemesCount > 10;
+  const isTagsExceeded = currentTagsCount > 10;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    // Sincronizar automáticamente el tono del setlist si el usuario cambia el tono original 
-    // y aún no ha tocado el select de setlist_key (opcional, pero buena UX)
     if (e.target.name === 'original_key' && formData.setlist_key === formData.original_key) {
       setFormData({
         ...formData,
@@ -56,12 +51,10 @@ const CancionForm: React.FC = () => {
     });
   };
 
-  // Guardado flexible: permite especificar si se publica de inmediato o si se guarda en estado Borrador
   const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
     
-    // Validación extra de seguridad por si el botón fue forzado
-    if (isThemesExceeded) {
+    if (isTagsExceeded) {
       setError('Has excedido el límite máximo de 10 etiquetas.');
       return;
     }
@@ -70,7 +63,7 @@ const CancionForm: React.FC = () => {
     setError('');
 
     try {
-      const themesArray = formData.themes
+      const tagsArray = formData.tags
         .split(',')
         .map(t => t.trim())
         .filter(t => t.length > 0);
@@ -82,23 +75,21 @@ const CancionForm: React.FC = () => {
         original_key: formData.original_key,
         tempo: formData.tempo ? parseInt(formData.tempo) : undefined,
         category: formData.category,
-        themes: themesArray,
+        tags: tagsArray, // CAMBIO: Enviamos 'tags'
         video_link: formData.video_link,
         content: formData.content,
-        // Si el admin presionó "Guardar como Borrador", enviamos ese estado explícito al servidor
         status: targetStatus
       };
 
       const response = await createSong(songPayload);
       const createdSongId = response.id;
 
-      // LÓGICA DEL REPERTORIO AL VUELO CON GRUPO Y TONO PERSONALIZADO
       if (repertorioId && createdSongId) {
         try {
           await addSongToSetlist(repertorioId, {
             song_id: createdSongId,
-            transposed_key: formData.setlist_key, // Usamos el tono seleccionado para el setlist
-            group_name: formData.setlist_group,   // Usamos el grupo seleccionado
+            transposed_key: formData.setlist_key,
+            group_name: formData.setlist_group,
             sort_order: 999 
           });
           
@@ -111,7 +102,6 @@ const CancionForm: React.FC = () => {
         }
       }
 
-      // Flujo de notificación si no viene de un repertorio
       if (targetStatus === 'Borrador') {
         alert('Borrador guardado exitosamente. No será visible en el catálogo público.');
       } else if (role === 'Admin') {
@@ -141,18 +131,18 @@ const CancionForm: React.FC = () => {
       <div className="form-card">
         <header className="form-header">
           <button 
-        type="button" 
-        className="btn-back" 
-        onClick={() => {
-          if (repertorioId) {
-            navigate(`/repertorios/${repertorioId}`);
-          } else {
-            navigate('/catalogo');
-          }
-        }}
-      >
-        &larr; Volver {repertorioId ? 'al repertorio' : 'al catálogo'}
-      </button>
+            type="button" 
+            className="btn-back" 
+            onClick={() => {
+              if (repertorioId) {
+                navigate(`/repertorios/${repertorioId}`);
+              } else {
+                navigate('/catalogo');
+              }
+            }}
+          >
+            &larr; Volver {repertorioId ? 'al repertorio' : 'al catálogo'}
+          </button>
           <h2>Proponer Canción</h2>
           <p>Llena los datos para agregar una nueva canción a la biblioteca.</p>
         </header>
@@ -160,8 +150,6 @@ const CancionForm: React.FC = () => {
         {error && <div className="error-banner">{error}</div>}
 
         <form onSubmit={(e) => handleSave(e)} className="song-form">
-          
-          {/* SECCIÓN ESPECIAL SI VENIMOS DESDE UN REPERTORIO */}
           {repertorioId && (
             <div className="form-group full-width" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--accent-color)' }}>
               <h3 style={{ marginTop: 0, marginBottom: '1rem', color: 'var(--accent-color)' }}>Opciones para el Repertorio</h3>
@@ -242,20 +230,20 @@ const CancionForm: React.FC = () => {
           </div>
 
           <div className="form-group full-width">
-            <label htmlFor="themes">Etiquetas / Temas (Opcional)</label>
+            {/* CAMBIO: Name e id actualizados a 'tags' */}
+            <label htmlFor="tags">Etiquetas (Opcional)</label>
             <input 
               type="text" 
-              id="themes" 
-              name="themes" 
-              value={formData.themes} 
+              id="tags" 
+              name="tags" 
+              value={formData.tags} 
               onChange={handleChange} 
               placeholder="Ej. fe, esperanza, cruz (separados por comas)"
-              className={isThemesExceeded ? 'input-error' : ''}
+              className={isTagsExceeded ? 'input-error' : ''}
             />
-            {/* Contador dinámico de etiquetas */}
-            <div className={`themes-counter ${isThemesExceeded ? 'text-danger' : 'text-muted'}`}>
-              {currentThemesCount} / 10 etiquetas permitidas
-              {isThemesExceeded && <span> - Has excedido el límite máximo. Elimina algunas para continuar.</span>}
+            <div className={`themes-counter ${isTagsExceeded ? 'text-danger' : 'text-muted'}`}>
+              {currentTagsCount} / 10 etiquetas permitidas
+              {isTagsExceeded && <span> - Has excedido el límite máximo. Elimina algunas para continuar.</span>}
             </div>
           </div>
 
@@ -288,19 +276,18 @@ const CancionForm: React.FC = () => {
               Cancelar
             </button>
             
-            {/* BOTÓN OPCIONAL: Visible únicamente para administradores para guardar un borrador en revisión */}
             {role === 'Admin' && (
               <button 
                 type="button" 
                 className="btn-draft" 
-                disabled={loading || isThemesExceeded}
+                disabled={loading || isTagsExceeded}
                 onClick={(e) => handleSave(e, 'Borrador')}
               >
                 {loading ? 'Guardando...' : '💾 Guardar como Borrador'}
               </button>
             )}
 
-            <button type="submit" className="btn-primary" disabled={loading || isThemesExceeded}>
+            <button type="submit" className="btn-primary" disabled={loading || isTagsExceeded}>
               {loading ? 'Guardando...' : role === 'Admin' ? '🚀 Publicar Canción' : 'Guardar Canción'}
             </button>
           </div>

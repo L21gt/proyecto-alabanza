@@ -37,10 +37,10 @@
   color: #3b82f6;
 }
 
-/* Contenedor principal del título y botón de video (Flexbox) */
+/* Contenedor principal del título y botones (Flexbox) */
 .cd-title-row {
   display: flex;
-  justify-content: space-between; /* Título a la izq, botón a la der */
+  justify-content: space-between; 
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 0.5rem;
@@ -60,7 +60,7 @@
   font-weight: 800;
 }
 
-/* Insignias de versión y estados (Pendiente/Borrador) */
+/* Insignias */
 .cd-version-badge {
   background-color: rgba(59, 130, 246, 0.2);
   color: #60a5fa;
@@ -79,14 +79,8 @@
   font-size: 0.8rem;
   font-weight: bold;
 }
-
-.cd-status-pending {
-  background-color: #f59e0b;
-}
-
-.cd-status-draft {
-  background-color: #6b7280;
-}
+.cd-status-pending { background-color: #f59e0b; }
+.cd-status-draft { background-color: #6b7280; }
 
 .cd-author {
   font-size: 1.1rem;
@@ -119,7 +113,14 @@
   color: #94a3b8;
 }
 
-/* Botón de video en el encabezado */
+/* --- Botones de Acción Derecha --- */
+.cd-actions-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .cd-video-btn {
   background-color: #f1f5f9;
   color: #0f172a;
@@ -130,17 +131,30 @@
   font-weight: bold;
   font-size: 0.95rem;
   transition: all 0.2s;
-  white-space: nowrap; /* Evita que el texto del botón se parta */
+  white-space: nowrap;
 }
 
-.cd-video-btn:hover {
-  background-color: #cbd5e1;
+.cd-video-btn:hover { background-color: #cbd5e1; }
+
+.cd-print-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
+
+.cd-print-btn:hover { background-color: #2563eb; }
 
 /* --- Barra de Metadatos --- */
 .cd-meta-bar {
   display: flex;
-  justify-content: flex-start; /* Alineado a la izquierda */
+  justify-content: flex-start;
   gap: 3rem;
   background-color: #0f172a;
   padding: 1.2rem;
@@ -152,7 +166,7 @@
 .cd-meta-item {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Texto interno a la izquierda */
+  align-items: flex-start;
   gap: 4px;
 }
 
@@ -187,17 +201,13 @@
   font-size: 1.25rem;
   line-height: 1.8;
   color: #e2e8f0;
-  
-  /* CORECCIONES DE ALINEACIÓN */
   text-align: left;      
   margin: 0 auto;        
   display: inline-block; 
-  
   white-space: pre;      
   max-width: 100%;
 }
 
-/* --- Vista de Error / Revisión --- */
 .cd-error-view {
   text-align: center;
   margin-top: 3rem;
@@ -205,40 +215,102 @@
   background-color: #1e293b;
   border-radius: 8px;
 }
-
-.cd-error-view h3 {
-  color: #fbbf24;
-  margin: 0;
-}
-
-.cd-error-view p {
-  color: #f8fafc;
-  margin-top: 1rem;
-  font-size: 1.1rem;
-}
-
-.cd-error-btn {
-  margin-top: 2rem;
-}
-
+.cd-error-view h3 { color: #fbbf24; margin: 0; }
+.cd-error-view p { color: #f8fafc; margin-top: 1rem; font-size: 1.1rem; }
+.cd-error-btn { margin-top: 2rem; }
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
   .cd-title-row {
-    flex-direction: column; /* En móviles apilamos el título y el botón */
+    flex-direction: column;
     align-items: flex-start;
   }
+  .cd-actions-right { margin-top: 10px; }
+  .cd-meta-bar { gap: 1.5rem; flex-wrap: wrap; }
+  .cd-content-area { padding: 1.5rem 1rem; }
+  .cd-lyrics { font-size: 1rem; }
+}
 
-  .cd-meta-bar {
-    gap: 1.5rem;
-    flex-wrap: wrap;
+/* --- Impresión (PDF) Limpia y Blanca --- */
+@media print {
+  body, .cancion-detalle-container {
+    background-color: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
-  .cd-content-area {
-    padding: 1.5rem 1rem; 
+  /* Ocultamos botones y controles durante la impresión */
+  .cd-header .btn-back, 
+  .cd-actions-right,
+  .cd-video-btn,
+  .cd-print-btn,
+  .print-controls {
+    display: none !important;
   }
   
+  .cd-title-area h2, 
+  .cd-author, 
   .cd-lyrics {
-    font-size: 1rem; 
+    color: black !important;
   }
+  
+  .cd-meta-bar {
+    background-color: transparent !important;
+    border: 1px solid #ccc !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .cd-meta-label { color: #555 !important; }
+  .cd-meta-value { color: black !important; }
+  
+  /* ELIMINAMOS los bloqueos rígidos del contenedor para que la hoja fluya */
+  .cd-content-area {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important; 
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .cd-lyrics {
+    display: block !important;
+    
+    /* CENTRADO PARA 1 COLUMNA */
+    width: fit-content !important;
+    margin: 0 auto !important;
+    
+    font-size: 14px !important;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif !important;
+    
+    /* Mantenemos el white-space para respetar los acordes, pero dejamos 
+       que el navegador maneje los saltos de página con orphans/widows */
+    white-space: pre-wrap !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* REGLA PARA 2 COLUMNAS */
+  .print-two-columns {
+    width: 100% !important;
+    column-count: 2 !important;
+    column-gap: 3rem !important;
+    column-rule: 1px dashed #ccc;
+    display: block !important;
+  }
+
+  .cd-tag {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+}
+
+/* Ajuste de los márgenes físicos de la hoja de papel */
+@page {
+  margin: 1.5cm 1.5cm; 
 }

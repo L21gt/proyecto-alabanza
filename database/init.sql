@@ -1,12 +1,6 @@
 -- ============================================================================
--- PROYECTO BIBLIOTECA DE ALABANZAS - ESQUEMA DEFINITIVO (SPRINT 2)
+-- PROYECTO BIBLIOTECA DE ALABANZAS - ESQUEMA DEFINITIVO (SPRINT 4)
 -- ============================================================================
--- Autor: Equipo de Desarrollo
--- Motor: PostgreSQL 14+
--- Descripción: Esquema relacional con soporte para RBAC, control editorial 
---              (borradores), repertorios dinámicos, bitácora y personalización.
--- ============================================================================
-
 
 -- ============================================================================
 -- 1. TIPOS ENUMERADOS (Catálogos y Estados del Sistema)
@@ -16,12 +10,6 @@ CREATE TYPE user_role     AS ENUM ('Admin', 'Usuario');
 CREATE TYPE user_status   AS ENUM ('Pendiente', 'Aprobado', 'Rechazado');
 CREATE TYPE song_category AS ENUM ('Alabanza', 'Adoracion');
 CREATE TYPE song_status   AS ENUM ('Pendiente', 'Aprobado', 'Borrador');
-
-ALTER TYPE user_role     OWNER TO admin;
-ALTER TYPE user_status   OWNER TO admin;
-ALTER TYPE song_category OWNER TO admin;
-ALTER TYPE song_status   OWNER TO admin;
-
 
 -- ============================================================================
 -- 2. MÓDULO DE USUARIOS Y SEGURIDAD
@@ -34,7 +22,7 @@ CREATE TABLE users (
     name                   VARCHAR(255)             NOT NULL,
     birth_date             DATE                     NOT NULL,
     phone                  VARCHAR(20),
-    area                   VARCHAR(100),            -- Ej: músico, cantor, director, sonido
+    area                   VARCHAR(100),
     role                   user_role                NOT NULL DEFAULT 'Usuario'::user_role,
     status                 user_status              NOT NULL DEFAULT 'Pendiente'::user_status,
     reset_password_token   VARCHAR(255),
@@ -42,11 +30,9 @@ CREATE TABLE users (
     created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE users OWNER TO admin;
-
 
 -- ============================================================================
--- 3. MÓDULO DEL CATÁLOGO DE CANCIONES Y ETIQUETAS (TEMAS)
+-- 3. MÓDULO DEL CATÁLOGO DE CANCIONES
 -- ============================================================================
 
 CREATE TABLE songs (
@@ -62,34 +48,38 @@ CREATE TABLE songs (
     video_link   VARCHAR(500),
     created_by   INTEGER                  REFERENCES users(id) ON DELETE SET NULL,
     created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at   TIMESTAMP WITH TIME ZONE 
 );
 
-ALTER TABLE songs OWNER TO admin;
-
--- Índices de búsqueda frecuente en el catálogo
 CREATE INDEX idx_songs_title  ON songs (title);
 CREATE INDEX idx_songs_author ON songs (author);
 
--- 3.1 Tabla unificada de Temas (Etiquetas de canciones y Estilos de Repertorio)
-CREATE TABLE IF NOT EXISTS themes (
+-- ============================================================================
+-- 3.1 Módulo de Categorización: Etiquetas de Canciones (Tags)
+-- ============================================================================
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE song_tags (
+    song_id INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (song_id, tag_id)
+);
+
+-- ============================================================================
+-- 3.2 Módulo de Presentación: Estilos de Repertorio (Themes)
+-- ============================================================================
+CREATE TABLE themes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
-    background_style TEXT, 
+    background_style TEXT,
     text_color VARCHAR(50) DEFAULT '#000000',
     font_family VARCHAR(100) DEFAULT 'Arial, sans-serif',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE themes OWNER TO admin;
-
-CREATE TABLE song_themes (
-    song_id  INTEGER NOT NULL REFERENCES songs(id)  ON DELETE CASCADE,
-    theme_id INTEGER NOT NULL REFERENCES themes(id) ON DELETE CASCADE,
-    PRIMARY KEY (song_id, theme_id)
-);
-
-ALTER TABLE song_themes OWNER TO admin;
 
 
 -- ============================================================================
@@ -101,12 +91,9 @@ CREATE TABLE setlists (
     name       VARCHAR(255)             NOT NULL,
     event_date DATE,
     user_id    INTEGER                  REFERENCES users(id) ON DELETE SET NULL,
-    theme_id   INTEGER                  REFERENCES themes(id) ON DELETE SET NULL, -- Relación directa con el diseño
+    theme_id   INTEGER                  REFERENCES themes(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE setlists OWNER TO admin;
-
 
 CREATE TABLE setlist_songs (
     id             SERIAL                   PRIMARY KEY,
@@ -118,8 +105,6 @@ CREATE TABLE setlist_songs (
     created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE setlist_songs OWNER TO admin;
-
 
 -- ============================================================================
 -- 5. MÓDULO DE AUDITORÍA Y TRAZABILIDAD (AUDIT TRAIL)
@@ -129,34 +114,21 @@ CREATE TABLE song_audit_logs (
     id              SERIAL                   PRIMARY KEY,
     song_id         INTEGER                  NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
     user_id         INTEGER                  REFERENCES users(id)          ON DELETE SET NULL,
-    action          VARCHAR(50)              NOT NULL, -- Ej: 'CREACION', 'EDICION', 'CAMBIO_ESTADO'
+    action          VARCHAR(50)              NOT NULL,
     previous_status song_status,
     new_status      song_status,
     notes           TEXT,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE song_audit_logs OWNER TO admin;
-
--- Índice para optimizar consultas de línea de tiempo por canción
 CREATE INDEX idx_song_audit_logs_song_id ON song_audit_logs (song_id);
 
 -- ============================================================================
 -- 6. INSERCIÓN DE DATOS INICIALES (ESTILOS VISUALES)
 -- ============================================================================
 
-INSERT INTO themes (name, background_style, text_color, font_family)
-SELECT 'Clásico Blanco', 'none', '#000000', 'Arial, sans-serif'
-WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Clásico Blanco');
-
-INSERT INTO themes (name, background_style, text_color, font_family)
-SELECT 'Pergamino Elegante', 'url("/pergamino.png")', '#2c1e16', '"Georgia", serif'
-WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Pergamino Elegante');
-
-INSERT INTO themes (name, background_style, text_color, font_family)
-SELECT 'Cielo Azul', 'linear-gradient(to bottom, #f0f9ff, #e0f2fe)', '#0369a1', '"Helvetica Neue", Helvetica, Arial, sans-serif'
-WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Cielo Azul');
-
-INSERT INTO themes (name, background_style, text_color, font_family)
-SELECT 'Noche Estrellada', 'linear-gradient(to bottom, #1e293b, #0f172a)', '#f8fafc', '"Courier New", Courier, monospace'
-WHERE NOT EXISTS (SELECT 1 FROM themes WHERE name = 'Noche Estrellada');
+INSERT INTO themes (name, background_style, text_color, font_family) VALUES
+('Clásico Blanco', 'none', '#000000', 'Arial, sans-serif'),
+('Pergamino Elegante', 'url("/pergamino.png")', '#2c1e16', '"Georgia", serif'),
+('Cielo Azul', 'linear-gradient(to bottom, #f0f9ff, #e0f2fe)', '#0369a1', '"Helvetica Neue", Helvetica, Arial, sans-serif'),
+('Noche Estrellada', 'linear-gradient(to bottom, #1e293b, #0f172a)', '#f8fafc', '"Courier New", Courier, monospace');

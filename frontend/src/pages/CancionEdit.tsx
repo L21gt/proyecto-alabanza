@@ -12,24 +12,22 @@ const CancionEdit: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Estados del formulario
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [originalKey, setOriginalKey] = useState('');
   const [tempo, setTempo] = useState<number>(120);
   const [category, setCategory] = useState('Alabanza');
-  const [themesInput, setThemesInput] = useState('');
+  const [tagsInput, setTagsInput] = useState(''); // CAMBIO: De themesInput a tagsInput
   const [content, setContent] = useState('');
   const [videoLink, setVideoLink] = useState('');
   const [originalStatus, setOriginalStatus] = useState('');
 
-  // Calculamos en tiempo real la cantidad de etiquetas válidas
-  const currentThemesCount = themesInput
+  const currentTagsCount = tagsInput
     .split(',')
     .map(t => t.trim())
     .filter(t => t !== '').length;
     
-  const isThemesExceeded = currentThemesCount > 10;
+  const isTagsExceeded = currentTagsCount > 10;
 
   useEffect(() => {
     const loadSongData = async () => {
@@ -44,8 +42,10 @@ const CancionEdit: React.FC = () => {
         setContent(data.content);
         setVideoLink(data.video_link || '');
         setOriginalStatus(data.status || '');
-        if (data.themes) {
-          setThemesInput(data.themes.join(', '));
+        
+        // CAMBIO: Leemos data.tags en lugar de data.themes
+        if (data.tags) {
+          setTagsInput(data.tags.join(', '));
         }
       } catch (err) {
         console.error("Error al cargar la canción:", err);
@@ -55,13 +55,11 @@ const CancionEdit: React.FC = () => {
     loadSongData();
   }, [id]);
 
-  // Permite guardar especificando si se cambia el estado a Borrador o Aprobado
   const handleSave = async (e: React.FormEvent, targetStatus?: 'Borrador' | 'Aprobado') => {
     e.preventDefault();
     if (!id) return;
     
-    // Validación extra de seguridad
-    if (isThemesExceeded) {
+    if (isTagsExceeded) {
       setError('Has excedido el límite máximo de 10 etiquetas.');
       return;
     }
@@ -70,7 +68,7 @@ const CancionEdit: React.FC = () => {
     setError('');
 
     try {
-      const themesArray = themesInput
+      const tagsArray = tagsInput
         .split(',')
         .map(t => t.trim())
         .filter(t => t !== '');
@@ -81,13 +79,12 @@ const CancionEdit: React.FC = () => {
         original_key: originalKey,
         tempo,
         category,
-        themes: themesArray,
+        tags: tagsArray, // CAMBIO: Enviamos tags
         content,
         video_link: videoLink,
         status: targetStatus || 'Aprobado'
       });
 
-      // LÓGICA DE ENRUTAMIENTO INTELIGENTE
       if (targetStatus === 'Borrador') {
         alert('Canción guardada en estado Borrador. No aparecerá en el catálogo público.');
         navigate('/admin');
@@ -182,14 +179,13 @@ const CancionEdit: React.FC = () => {
             <label className="form-label">Etiquetas (separadas por coma)</label>
             <input 
               type="text" 
-              className={`form-input ${isThemesExceeded ? 'input-error' : ''}`} 
-              value={themesInput} 
-              onChange={e => setThemesInput(e.target.value)} 
+              className={`form-input ${isTagsExceeded ? 'input-error' : ''}`} 
+              value={tagsInput} 
+              onChange={e => setTagsInput(e.target.value)} 
             />
-            {/* Contador dinámico integrado */}
-            <div className={`themes-counter ${isThemesExceeded ? 'text-danger' : 'text-muted'}`}>
-              {currentThemesCount} / 10 etiquetas permitidas
-              {isThemesExceeded && <span> - Límite excedido.</span>}
+            <div className={`themes-counter ${isTagsExceeded ? 'text-danger' : 'text-muted'}`}>
+              {currentTagsCount} / 10 etiquetas permitidas
+              {isTagsExceeded && <span> - Límite excedido.</span>}
             </div>
           </div>
         </div>
@@ -217,7 +213,6 @@ const CancionEdit: React.FC = () => {
         </div>
 
         <div className="form-actions">
-          {/* Usamos btn-secondary que es el estándar del otro formulario */}
           <button 
             type="button" 
             className="btn-secondary" 
@@ -227,19 +222,18 @@ const CancionEdit: React.FC = () => {
             Cancelar
           </button>
 
-          {/* Opción editorial de guardar revisión incompleta solo visible para Admin */}
           {role === 'Admin' && (
             <button 
               type="button" 
               className="btn-draft" 
-              disabled={isLoading || isThemesExceeded}
+              disabled={isLoading || isTagsExceeded}
               onClick={(e) => handleSave(e, 'Borrador')}
             >
               {isLoading ? 'Guardando...' : '💾 Guardar como Borrador'}
             </button>
           )}
 
-          <button type="submit" className="btn-primary" disabled={isLoading || isThemesExceeded}>
+          <button type="submit" className="btn-primary" disabled={isLoading || isTagsExceeded}>
             {isLoading ? 'Guardando...' : 'Guardar Cambios y Publicar'}
           </button>
         </div>

@@ -7,7 +7,7 @@ export interface Song {
   tempo?: number;   // El '?' soluciona el error, indicando que es opcional
   category: string;
   content: string;
-  themes?: string[]; // (Opcional)
+  tags?: string[]; // (Opcional)
   video_link?: string; // Nuevo (Opcional)
   status?: string;   // (Opcional, para el flujo editorial)
   created_at?: string;

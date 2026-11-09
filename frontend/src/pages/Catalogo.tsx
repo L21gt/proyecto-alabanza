@@ -9,19 +9,16 @@ const Catalogo: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Estados de Filtros y Búsqueda (Se agrega 'author')
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filters, setFilters] = useState({ category: '', original_key: '', author: '' });
   
-  // Estado de Paginación
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, currentPage: 1, totalItems: 0 });
   
   const navigate = useNavigate();
   const userRole = localStorage.getItem('userRole');
 
-  // Limpieza de sesión y redirección por expiración de credenciales
   const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
@@ -29,7 +26,6 @@ const Catalogo: React.FC = () => {
     navigate('/login');
   }, [navigate]);
 
-  // Manejo de retraso (debounce) para optimizar peticiones de búsqueda principal e input de autor
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -38,14 +34,12 @@ const Catalogo: React.FC = () => {
     return () => clearTimeout(timerId);
   }, [searchTerm, filters.author]);
 
-  // Actualización de estado al modificar filtros (ahora soporta inputs y selects)
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
     setPage(1);
   };
 
-  // Petición asíncrona para la obtención de registros paginados y filtrados
   useEffect(() => {
     const fetchSongs = async () => {
       setLoading(true);
@@ -54,7 +48,7 @@ const Catalogo: React.FC = () => {
         const queryFilters: SongFilters = {
           search: debouncedSearchTerm,
           category: filters.category,
-          author: filters.author, // Se inyecta el nuevo filtro de autor
+          author: filters.author,
           original_key: filters.original_key,
           page: page,
           limit: 24
@@ -93,7 +87,6 @@ const Catalogo: React.FC = () => {
       </header>
 
       <div className="catalogo-layout">
-        {/* Panel lateral de filtrado avanzado */}
         <aside className="filters-sidebar">
           <h3>Filtros</h3>
           
@@ -101,8 +94,8 @@ const Catalogo: React.FC = () => {
             <label>Búsqueda General</label>
             <input
               type="text"
-              className="search-input"
-              placeholder="Títulos o Temas..."
+              className="search-input"             
+              placeholder="Títulos o Etiquetas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -147,7 +140,6 @@ const Catalogo: React.FC = () => {
           </div>
         </aside>
 
-        {/* Vista principal de canciones en formato de lista compacta */}
         <main className="catalogo-main">
           {loading ? (
             <div className="loading-container">Cargando catálogo...</div>
@@ -187,7 +179,6 @@ const Catalogo: React.FC = () => {
                 ))}
               </div>
 
-              {/* Controles de paginación */}
               {pagination.totalPages > 1 && (
                 <div className="pagination-controls">
                   <button 

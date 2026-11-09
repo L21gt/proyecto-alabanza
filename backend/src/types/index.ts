@@ -17,7 +17,7 @@ export interface Song {
   tempo: number;
   category: string;
   content: string;
-  themes: string[];
+  tags: string[]; // CAMBIO: Actualizado de themes a tags
   created_at?: string;
   updated_at?: string;
 }
