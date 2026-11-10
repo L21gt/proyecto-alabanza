@@ -125,6 +125,7 @@ const CancionEdit: React.FC = () => {
           type="button" 
           className="btn-danger" 
           onClick={handleDelete}
+          style={{ backgroundColor: '#ef4444', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '4px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
           disabled={isLoading}
         >
           Eliminar Canción
