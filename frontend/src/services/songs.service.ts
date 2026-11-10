@@ -206,3 +206,20 @@ export const restoreSong = async (id: string | number): Promise<void> => {
     throw new Error(data.error || 'Error al restaurar la canción');
   }
 };
+
+// Agrega esta función al final de tu songs.service.ts
+export const getSongHistory = async (id: string) => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/${id}/history`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Error al obtener el historial');
+  }
+  
+  return response.json();
+};

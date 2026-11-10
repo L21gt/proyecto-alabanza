@@ -310,7 +310,7 @@ const AdminDashboard: React.FC = () => {
                 <td className="actions-cell">
                   <button 
                     className="btn-review" 
-                    onClick={() => navigate(`/cancion/${song.id}/editar`)}
+                    onClick={() => navigate(`/cancion/editar/${song.id}`)}
                   >
                     Revisar y Editar
                   </button>

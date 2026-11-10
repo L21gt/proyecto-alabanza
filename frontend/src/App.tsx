@@ -8,13 +8,17 @@ import CancionForm from './pages/CancionForm';
 import CancionEdit from './pages/CancionEdit';
 import RepertorioDetalle from './pages/RepertorioDetalle';
 import AdminDashboard from './pages/AdminDashboard';
-import Header from './components/Header'; // <-- Importamos el Header global
+import Header from './components/Header';
 import './index.css';
 import Presentacion from './pages/Presentacion';
 
+// AÑADIDO: Importamos el componente del Historial 
+// (Nota: Si tu archivo se llama diferente, por ejemplo 'Historial.tsx', ajusta el nombre aquí)
+import CancionHistorial from './pages/CancionHistorial'; 
+
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'; // Dark por defecto es más elegante
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
   });
 
   useEffect(() => {
@@ -28,9 +32,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      
       <div className="container">
-      {/* El Header envuelve toda la aplicación, le pasamos la función del tema */}
       <Header currentTheme={theme} onToggleTheme={toggleTheme} />
         <main>
           <Routes>
@@ -41,7 +43,11 @@ function App() {
             <Route path="/repertorios/:id" element={<RepertorioDetalle />} />
             <Route path="/cancion/:id" element={<CancionDetalle />} />
             <Route path="/cancion/nueva" element={<CancionForm />} />
-            <Route path="/cancion/:id/editar" element={<CancionEdit />} />
+            
+            {/* RUTAS CORREGIDAS: Ahora coinciden exactamente con los botones */}
+            <Route path="/cancion/editar/:id" element={<CancionEdit />} />
+            <Route path="/cancion/historial/:id" element={<CancionHistorial />} />
+            
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/repertorios/:id/presentacion" element={<Presentacion />} />
           </Routes>
