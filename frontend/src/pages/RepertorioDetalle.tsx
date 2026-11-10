@@ -8,17 +8,13 @@ import { getThemes } from '../services/themes.service';
 import type { Setlist, Song, SetlistSong, Theme } from '../types';
 import './RepertorioDetalle.css';
 
-// Extendemos el tipo Setlist para que TypeScript reconozca los nuevos campos del dueño
 interface SetlistExtended extends Setlist {
   owner_id?: number;
   owner_name?: string;
 }
 
-const MUSICAL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-// Actualizamos las columnas para que coincidan EXACTAMENTE con los valores que envía el nuevo selector en CancionForm
 const KANBAN_COLUMNS = ['Sin Asignar', 'ALABANZA', 'ADORACIÓN', 'OFRENDAS', 'MINISTRACIÓN', 'SANTA CENA'];
 
-// FUNCION DECODIFICADORA DEL TOKEN PARA EXTRAER EL ID
 const parseJwt = (token: string) => {
   try {
     const base64Url = token.split('.')[1];
@@ -50,7 +46,6 @@ const RepertorioDetalle: React.FC = () => {
   const [selectedGroups, setSelectedGroups] = useState<Record<number, string>>({});
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
-  // EXTRAER ID DIRECTAMENTE DEL TOKEN JWT EN VEZ DE BUSCAR UN LOCALSTORAGE QUE NO EXISTE
   let currentUserId = 0;
   const token = localStorage.getItem('token');
   if (token) {
@@ -62,7 +57,6 @@ const RepertorioDetalle: React.FC = () => {
 
   const userRole = localStorage.getItem('userRole') || 'Usuario';
   
-  // Validación final
   const isOwnerOrAdmin = setlist 
     ? (userRole === 'Admin' || (currentUserId !== 0 && Number(setlist.owner_id) === currentUserId)) 
     : false;
@@ -92,12 +86,12 @@ const RepertorioDetalle: React.FC = () => {
   useEffect(() => {
     const search = async () => {
       if (!debouncedSearchTerm.trim()) {
-        setSearchResults([]); // Limpieza directa sin condiciones complejas
+        setSearchResults([]); 
         return;
       }
       setIsSearching(true);
       try {
-        const data = await getSongs(debouncedSearchTerm);
+        const data = await getSongs({ search: debouncedSearchTerm });
         const results = data.songs || []; 
         setSearchResults(results);
         
@@ -177,7 +171,6 @@ const RepertorioDetalle: React.FC = () => {
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
     if (!setlist || !setlist.songs || !id) return;
     
-    // Si no tiene permisos, no hace nada visualmente ni envía petición
     if (!isOwnerOrAdmin) {
         alert("No tienes permisos para reordenar este repertorio.");
         return;
@@ -185,7 +178,6 @@ const RepertorioDetalle: React.FC = () => {
 
     setIsUpdatingOrder(true);
 
-    // Búsqueda insensible a mayúsculas para evitar bugs al arrastrar
     const getSongsByCol = (col: string) => 
       setlist.songs!.filter(s => {
           if (col === 'Sin Asignar') return !s.group_name;
@@ -235,7 +227,6 @@ const RepertorioDetalle: React.FC = () => {
       alert('El repertorio está vacío.');
       return false;
     }
-    // Opcional: Puedes quitar esta restricción estricta si quieres permitir PDFs con solo 1 categoría
     return true;
   };
 
@@ -276,7 +267,6 @@ const RepertorioDetalle: React.FC = () => {
           <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
           <h2 className="rd-title">{setlist.name}</h2>
           {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
-          {/* NUEVO: Mostrar el autor del repertorio */}
           <p className="rd-date" style={{ marginTop: '0.2rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
               Creado por: {setlist.owner_name || 'Usuario Desconocido'} 
               {!isOwnerOrAdmin && <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '5px' }}>(Modo Lectura)</span>}
@@ -284,8 +274,6 @@ const RepertorioDetalle: React.FC = () => {
         </div>
         
         <div className="rd-header-actions rd-header-actions-align">
-          
-          {/* SELECTOR DE TEMAS - SOLO VISIBLE SI TIENE PERMISOS */}
           {isOwnerOrAdmin && (
               <div className="rd-theme-selector-container">
                 <label className="rd-theme-selector-label" style={{ fontWeight: 'bold', marginRight: '5px' }}>Tema PDF:</label>
@@ -326,7 +314,6 @@ const RepertorioDetalle: React.FC = () => {
         </div>
       </header>
 
-      {/* SECCIÓN DE BÚSQUEDA Y AGREGAR CANCIONES - SOLO VISIBLE PARA DUEÑO O ADMIN */}
       {isOwnerOrAdmin && (
           <section className="rd-search-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -362,8 +349,14 @@ const RepertorioDetalle: React.FC = () => {
                       <span>{song.author}</span>
                     </div>
                     <div className="rd-result-actions">
+                      {/* SELECTOR 1: BÚSQUEDA */}
                       <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
-                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                        <optgroup label="Mayores">
+                          {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(k => <option key={k} value={k}>{k}</option>)}
+                        </optgroup>
+                        <optgroup label="Menores">
+                          {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(k => <option key={k} value={k}>{k}</option>)}
+                        </optgroup>
                       </select>
                       <select className="rd-select-meta rd-select-margin" value={selectedGroups[song.id] || 'Sin Asignar'} onChange={(e) => setSelectedGroups({ ...selectedGroups, [song.id]: e.target.value })}>
                         {KANBAN_COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
@@ -388,7 +381,6 @@ const RepertorioDetalle: React.FC = () => {
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="kanban-board">
             {KANBAN_COLUMNS.map(columnId => {
-              // Búsqueda insensible a mayúsculas para asignar las tarjetas a sus columnas correctamente
               const columnSongs = setlist.songs?.filter(s => {
                   if (columnId === 'Sin Asignar') return !s.group_name;
                   return s.group_name && s.group_name.toUpperCase() === columnId.toUpperCase();
@@ -396,7 +388,6 @@ const RepertorioDetalle: React.FC = () => {
               
               if (columnId === 'Sin Asignar' && columnSongs.length === 0) return null;
               
-              // En modo View-Only ocultamos las columnas vacías, pero el dueño/admin SIEMPRE debe verlas
               if (!isOwnerOrAdmin && columnSongs.length === 0) return null;
 
               return (
@@ -434,12 +425,18 @@ const RepertorioDetalle: React.FC = () => {
                                 
                                 <div className="kanban-card-footer">
                                   {isOwnerOrAdmin ? (
+                                      /* SELECTOR 2: TABLERO KANBAN */
                                       <select 
                                         className="rd-select-meta kanban-select"
                                         value={song.transposed_key || song.original_key || ""} 
                                         onChange={(e) => handleUpdateKey(song.song_id, e.target.value)}
                                       >
-                                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                                        <optgroup label="Mayores">
+                                          {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(k => <option key={k} value={k}>{k}</option>)}
+                                        </optgroup>
+                                        <optgroup label="Menores">
+                                          {['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'].map(k => <option key={k} value={k}>{k}</option>)}
+                                        </optgroup>
                                       </select>
                                   ) : (
                                       <span className="rd-select-meta kanban-select" style={{ cursor: 'default', background: 'transparent', border: 'none', paddingLeft: 0 }}>
@@ -463,7 +460,6 @@ const RepertorioDetalle: React.FC = () => {
         </DragDropContext>
       </section>
 
-      {/* PLANTILLA OCULTA PARA IMPRESIÓN / PDF */}
       <div 
         className="printable-setlist-pdf"
         style={{
