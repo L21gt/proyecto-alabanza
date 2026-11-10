@@ -515,122 +515,108 @@
   background-position: center;
 }
 
+/* --- Impresión (PDF) Limpia y a Pantalla Completa --- */
 @media print {
-
-  header, nav, .app-header {
-    display: none !important;
+  @page {
+    margin: 0; 
   }
-
-  /* Ocultamos las secciones interactivas de la aplicación */
+  
+  header, 
   .rd-header, 
   .rd-search-section, 
-  .rd-divider, 
-  .rd-kanban-section {
+  .rd-kanban-section, 
+  .rd-divider {
     display: none !important;
   }
   
-  /* Restauramos el fondo blanco general de la página para imprimir */
-  body {
-    padding: 0 !important; 
-    background-color: white !important;
-    color: black !important;
+  html, body, #root, .container, main, .repertorio-detalle-container {
+    background-color: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important; 
+    box-shadow: none !important;
   }
-  
-  /* Hacemos visible el contenedor de impresión y forzamos el centrado total */
+
+  /* El Pergamino */
   .printable-setlist-pdf {
     display: flex !important;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column !important;
+    align-items: center !important;     /* Centrado Horizontal */
+    justify-content: center !important; /* Centrado Vertical */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 2.5cm !important; 
+    box-sizing: border-box !important;
     
-    /* CAMBIO CLAVE: Usar height en lugar de min-height para evitar desbordamiento */
-    height: 100vh !important; 
-    width: 100%;
-    padding: 0;
-    
-    /* Evitar que el fondo se repita en nuevas páginas accidentalmente */
+    background-image: var(--theme-bg) !important;
+    background-size: 100vw 100vh !important; 
+    background-position: top left !important;
     background-repeat: no-repeat !important;
-    background-size: cover !important; /* Asegura que cubra la hoja sin deformarse */
-    page-break-after: avoid !important;
-  }
-
-  /* El cuerpo interno donde van las canciones */
-  .pdf-body {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Asegura que la lista <ul> quede en medio */
-  }
-
-  @page {
-    /* Ajusta los márgenes verticales para que no salte a la siguiente página tan rápido */
-    margin: 1cm 1.5cm; /* Margen superior/inferior más pequeño */ 
-  }
-
-  /* OBLIGA AL NAVEGADOR A IMPRIMIR FONDOS Y COLORES (Marcos/Temas) */
-  body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Asegura que todos los textos hereden el color del tema y no se queden negros */
-  .printable-setlist-pdf * {
-    page-break-after: auto;
-  }
-
-  /* Centramos el título y la fecha */
   .pdf-header {
-    display: flex;
-    flex-direction: row; /* Fuerzas que estén lado a lado */
-    justify-content: center; /* Los centra horizontalmente */
-    align-items: center;
-    border-bottom: 2px solid currentColor !important;
-    padding-bottom: 1rem;
-    margin-bottom: 2rem;
-    gap: 2rem; /* Espacio entre el título y la fecha */
+    text-align: center;
+    margin-bottom: 2rem !important;
+    width: 100% !important;
   }
 
   .pdf-header h1 {
-    font-size: 24pt;
-    font-family: 'Brush Script MT', cursive, Georgia, serif;
-    margin: 0;
+    color: var(--theme-color) !important;
+    margin: 0 !important;
+    font-size: 26pt !important;
+    font-family: var(--theme-font) !important;
   }
 
   .pdf-date {
-    background-color: #7ab3a2 !important;
-    color: white !important;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: bold;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    color: var(--theme-color) !important;
+    opacity: 0.8;
+    font-size: 12pt !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .pdf-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem !important;
+    width: 100% !important;
+    align-items: center !important; /* Centra el bloque de categorías */
   }
 
   .pdf-category-section {
-    margin-bottom: 2rem;
+    page-break-inside: avoid !important; 
+    margin-bottom: 1rem !important;
+    text-align: center !important; /* Centra texto interno */
+    width: 100% !important;
   }
 
   .pdf-category-section h2 {
-    text-align: center;
-    font-size: 16pt;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    font-family: Arial, sans-serif;
+    color: var(--theme-color) !important;
+    font-size: 16pt !important;
+    border-bottom: 1px solid var(--theme-color) !important;
+    padding-bottom: 0.3rem !important;
+    margin-bottom: 0.8rem !important;
+    font-family: var(--theme-font) !important;
+    display: inline-block !important; /* Evita que la línea de abajo ocupe todo el ancho */
   }
 
   .pdf-category-section ul {
-    list-style-type: none; /* Quitamos las viñetas para un look más limpio */
-    width: max-content; /* El bloque abrazará el ancho del texto más largo */
-    margin: 0 auto; /* Centra el bloque entero en la página */
-    text-align: left; /* Mantiene el texto alineado a la izquierda */
-    padding: 0;
-    font-size: 14pt;
-    font-family: Arial, sans-serif;
+    list-style-type: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   .pdf-category-section li {
-    margin-bottom: 0.6rem;
-    line-height: 1.4;
+    font-size: 14pt !important;
+    color: var(--theme-color) !important;
+    margin-bottom: 0.5rem !important;
+    font-family: var(--theme-font) !important;
   }
 }
 

@@ -19,9 +19,10 @@ export const createSetlist = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
+    // CAMBIO: Al crear, forzamos que nazca en estado 'Borrador'
     const query = `
-      INSERT INTO setlists (name, event_date, user_id)
-      VALUES ($1, $2, $3) RETURNING *
+      INSERT INTO setlists (name, event_date, user_id, status)
+      VALUES ($1, $2, $3, 'Borrador') RETURNING *
     `;
     const result = await pool.query(query, [name, event_date || null, user.id]);
     res.status(201).json({ message: 'Repertorio creado exitosamente', setlist: result.rows[0] });
@@ -33,7 +34,6 @@ export const createSetlist = async (req: Request, res: Response): Promise<void> 
 
 export const getSetlists = async (req: Request, res: Response): Promise<void> => {
   try {
-    // ACTUALIZADO: Obtenemos también la información del usuario dueño del repertorio
     const query = `
       SELECT s.*, u.name as owner_name 
       FROM setlists s
@@ -50,8 +50,9 @@ export const getSetlists = async (req: Request, res: Response): Promise<void> =>
 
 export const getSetlistById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
+  const user = (req as any).user as AuthUser;
+  
   try {
-    // ACTUALIZADO: Traemos información del tema Y del usuario creador (dueño)
     const query = `
       SELECT s.*, 
              t.name as theme_name, 
@@ -72,7 +73,14 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Join query to retrieve songs data along with their specific setlist attributes
+    const setlist = setlistRes.rows[0];
+
+    // RBAC ESTRICTO DE LECTURA: Si es un borrador, solo el dueño o un admin pueden entrar a verlo
+    if (setlist.status === 'Borrador' && setlist.user_id !== user.id && user.role !== 'Admin') {
+       res.status(403).json({ error: 'Este repertorio aún está en construcción y no es público.' });
+       return;
+    }
+
     const songsRes = await pool.query(`
       SELECT ss.song_id, ss.transposed_key, ss.sort_order, ss.group_name, s.title, s.author, s.original_key, s.tempo, s.status 
       FROM setlist_songs ss
@@ -81,7 +89,6 @@ export const getSetlistById = async (req: Request, res: Response): Promise<void>
       ORDER BY ss.sort_order ASC
     `, [id]);
 
-    const setlist = setlistRes.rows[0];
     setlist.songs = songsRes.rows;
 
     res.status(200).json(setlist);
@@ -96,29 +103,23 @@ export const addSongToSetlist = async (req: Request, res: Response): Promise<voi
   const { song_id, transposed_key, sort_order, group_name } = req.body;
   const user = (req as any).user as AuthUser;
 
-  // Validación básica para evitar queries nulos
   if (!song_id) {
     res.status(400).json({ error: 'El ID de la canción es obligatorio' });
     return;
   }
 
   try {
-    // RBAC: Verify ownership or Admin privileges
     const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
     }
 
-    // CORRECCIÓN PARA PERMITIR A USUARIOS ESTÁNDAR AGREGAR CANCIONES A SUS PROPIOS REPERTORIOS
-    // Si el usuario es el dueño (user_id === user.id) se le permite, si no lo es, pero es Admin, también.
-    // Si no es dueño Y no es Admin, se bloquea.
     if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
 
-    // Insertamos incluyendo la nueva columna
     const query = `
       INSERT INTO setlist_songs (setlist_id, song_id, transposed_key, sort_order, group_name)
       VALUES ($1, $2, $3, $4, $5)
@@ -129,7 +130,7 @@ export const addSongToSetlist = async (req: Request, res: Response): Promise<voi
       song_id, 
       transposed_key || null, 
       sort_order || 0, 
-      group_name || null // <-- Si no viene, será null
+      group_name || null
     ]);
     
     res.status(201).json({ message: 'Canción agregada al repertorio' });
@@ -144,14 +145,12 @@ export const removeSongFromSetlist = async (req: Request, res: Response): Promis
   const user = (req as any).user as AuthUser;
 
   try {
-    // RBAC: Verify ownership or Admin privileges
     const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
     }
 
-    // CORRECCIÓN RBAC
     if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
@@ -170,14 +169,12 @@ export const deleteSetlist = async (req: Request, res: Response): Promise<void> 
   const user = (req as any).user as AuthUser;
 
   try {
-    // RBAC: Verify ownership or Admin privileges
     const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
     }
 
-    // CORRECCIÓN RBAC
     if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para eliminar este repertorio' });
       return;
@@ -193,7 +190,7 @@ export const deleteSetlist = async (req: Request, res: Response): Promise<void> 
 
 export const reorderSetlistSongs = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { songs } = req.body; // Recibimos un arreglo de { song_id, sort_order, group_name }
+  const { songs } = req.body; 
   const user = (req as any).user as AuthUser;
 
   if (!songs || !Array.isArray(songs)) {
@@ -202,20 +199,17 @@ export const reorderSetlistSongs = async (req: Request, res: Response): Promise<
   }
 
   try {
-    // RBAC: Verificamos propiedad o si es Admin
     const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
     }
 
-    // CORRECCIÓN RBAC
     if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
 
-    // Usamos un cliente dedicado para la Transacción Masiva
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -243,31 +237,57 @@ export const reorderSetlistSongs = async (req: Request, res: Response): Promise<
   }
 };
 
-// NUEVO ENDPOINT: Actualizar el Tema de un Repertorio
 export const updateSetlistTheme = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const { theme_id } = req.body;
   const user = (req as any).user as AuthUser;
 
   try {
-    // RBAC: Verify ownership or Admin privileges
     const setlistRes = await pool.query('SELECT user_id FROM setlists WHERE id = $1', [id]);
     if (setlistRes.rows.length === 0) {
       res.status(404).json({ error: 'Repertorio no encontrado' });
       return;
     }
 
-    // CORRECCIÓN RBAC
     if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
       res.status(403).json({ error: 'No tienes permisos para modificar este repertorio' });
       return;
     }
 
-    // Actualizamos el theme_id (permite nulos si el usuario quiere "quitar" el tema)
     await pool.query('UPDATE setlists SET theme_id = $1 WHERE id = $2', [theme_id || null, id]);
     res.status(200).json({ message: 'Tema actualizado exitosamente' });
   } catch (error) {
     console.error('Error al actualizar el tema del repertorio:', error);
     res.status(500).json({ error: 'Error interno del servidor al actualizar tema' });
+  }
+};
+
+// NUEVO ENDPOINT: Publicar un repertorio (Cambiar de Borrador a Publicado)
+export const publishSetlist = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const user = (req as any).user as AuthUser;
+
+  try {
+    const setlistRes = await pool.query('SELECT user_id, status FROM setlists WHERE id = $1', [id]);
+    if (setlistRes.rows.length === 0) {
+      res.status(404).json({ error: 'Repertorio no encontrado' });
+      return;
+    }
+
+    if (setlistRes.rows[0].user_id !== user.id && user.role !== 'Admin') {
+      res.status(403).json({ error: 'Solo el creador del repertorio puede publicarlo' });
+      return;
+    }
+
+    if (setlistRes.rows[0].status === 'Publicado') {
+       res.status(400).json({ error: 'El repertorio ya se encuentra publicado' });
+       return;
+    }
+
+    await pool.query('UPDATE setlists SET status = $1 WHERE id = $2', ['Publicado', id]);
+    res.status(200).json({ message: '¡Repertorio publicado exitosamente! Ahora es visible para todo el equipo.' });
+  } catch (error) {
+    console.error('Error al publicar el repertorio:', error);
+    res.status(500).json({ error: 'Error interno del servidor al publicar' });
   }
 };

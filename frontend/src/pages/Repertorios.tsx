@@ -4,8 +4,28 @@ import { getSetlists, createSetlist, deleteSetlist } from '../services/setlists.
 import type { Setlist } from '../types';
 import './Repertorios.css';
 
+// 1. Usamos Omit para quitar el user_id base de Setlist y reescribirlo, evitando el choque de tipos
+interface SetlistExtended extends Omit<Setlist, 'user_id'> {
+  owner_name?: string;
+  user_id: number | null; 
+  status?: string;
+}
+
+const parseJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
 const Repertorios: React.FC = () => {
-  const [setlists, setSetlists] = useState<Setlist[]>([]);
+  const [setlists, setSetlists] = useState<SetlistExtended[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -14,7 +34,16 @@ const Repertorios: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const navigate = useNavigate();
-  // const role = localStorage.getItem('userRole');
+  const role = localStorage.getItem('userRole') || 'Usuario';
+  
+  let currentUserId = 0;
+  const token = localStorage.getItem('token');
+  if (token) {
+    const decoded = parseJwt(token);
+    if (decoded && decoded.id) {
+      currentUserId = Number(decoded.id);
+    }
+  }
 
   const fetchSetlists = useCallback(async () => {
     try {
@@ -36,8 +65,11 @@ const Repertorios: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchSetlists();
+    // Definimos una función asíncrona autoejecutable dentro del efecto
+    const init = async () => {
+      await fetchSetlists();
+    };
+    init();
   }, [fetchSetlists]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -57,9 +89,8 @@ const Repertorios: React.FC = () => {
     }
   };
 
-  // NUEVA FUNCIÓN: Eliminar Repertorio
   const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // Evita que al hacer clic en "Eliminar" se abra el detalle del repertorio
+    e.stopPropagation(); 
     if (!window.confirm('¿Estás seguro de eliminar este repertorio permanentemente?')) return;
     
     try {
@@ -76,15 +107,7 @@ const Repertorios: React.FC = () => {
     <div className="repertorios-container">
       <header className="repertorios-header">
         <h2 className="repertorios-title">Gestor de Repertorios</h2>
-        {/* Se sustituyó el estilo inline por una clase CSS dedicada */}
         <div className="repertorios-header-actions">
-          {/* BOTÓN AGREGADO PARA SUGERIR CANCIONES
-          <button 
-            onClick={() => navigate('/cancion/nueva')} 
-            className="btn-primary"
-          >
-            {role === 'Admin' ? '+ Agregar Canción al Catálogo' : '+ Sugerir Nueva Canción'}
-          </button> */}
           <button 
             onClick={() => navigate('/catalogo')} 
             className="btn-secondary"
@@ -123,32 +146,53 @@ const Repertorios: React.FC = () => {
         {setlists.length === 0 ? (
           <p className="empty-message">No hay repertorios creados aún.</p>
         ) : (
-          setlists.map((setlist) => (
-            <div 
-              key={setlist.id} 
-              className="setlist-card setlist-card-clickable"
-              onClick={() => navigate(`/repertorios/${setlist.id}`)}
-            >
-              <div className="setlist-card-content">
-                <h3 className="setlist-name">{setlist.name}</h3>
-                <p className="setlist-date">
-                  {setlist.event_date 
-                    ? new Date(setlist.event_date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) 
-                    : 'Sin fecha programada'}
-                </p>
+          setlists.map((setlist: SetlistExtended) => {
+            const isOwner = currentUserId !== 0 && Number(setlist.user_id) === currentUserId;
+            const isAdmin = role === 'Admin';
+            
+            if (setlist.status === 'Borrador' && !isOwner && !isAdmin) {
+                return null;
+            }
+
+            return (
+              <div 
+                key={setlist.id} 
+                className="setlist-card setlist-card-clickable"
+                onClick={() => navigate(`/repertorios/${setlist.id}`)}
+                style={{ opacity: setlist.status === 'Borrador' ? 0.8 : 1 }}
+              >
+                <div className="setlist-card-content">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <h3 className="setlist-name">{setlist.name}</h3>
+                    {setlist.status === 'Borrador' && (
+                      <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        Borrador
+                      </span>
+                    )}
+                  </div>
+                  <p className="setlist-date">
+                    {setlist.event_date 
+                      ? new Date(setlist.event_date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) 
+                      : 'Sin fecha programada'}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                    De: {setlist.owner_name || 'Usuario'}
+                  </p>
+                </div>
+                <div className="setlist-card-action">
+                  <span>Ver repertorio &rarr;</span>
+                  {(isOwner || isAdmin) && (
+                    <button 
+                      className="btn-danger btn-delete-setlist" 
+                      onClick={(e) => handleDelete(e, setlist.id)}
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="setlist-card-action">
-                <span>Ver canciones &rarr;</span>
-                {/* BOTÓN PARA ELIMINAR */}
-                <button 
-                  className="btn-danger btn-delete-setlist" 
-                  onClick={(e) => handleDelete(e, setlist.id)}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

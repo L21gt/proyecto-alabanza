@@ -137,3 +137,13 @@ export const updateSetlistTheme = async (id: string | number, themeId: number | 
     throw new Error(errorData.error || 'Error al actualizar el tema');
   }
 };
+
+export const publishSetlist = async (id: string) => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_URL}/setlists/${id}/publish`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) throw new Error('Error al publicar el repertorio');
+  return response.json();
+};
