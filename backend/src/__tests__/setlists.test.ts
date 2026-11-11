@@ -1,258 +1,396 @@
 import request from 'supertest';
 import app from '../app';
 import pool from '../config/database';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
-describe('Módulo de Repertorios (Setlists)', () => {
-  let adminToken: string;
-  let musico1Token: string;
-  let musico2Token: string;
+// 1. Inyectamos los Mocks del Pool
+jest.mock('../config/database');
+const mockedPool = pool as jest.Mocked<typeof pool>;
+
+// 2. Inyectamos el Mock de Auth COMPLETO (Incluyendo verifyAdmin)
+jest.mock('../middlewares/auth.middleware', () => ({
+  verifyToken: (req: any, res: any, next: any) => {
+    if (req.headers.authorization === 'Bearer TEST_TOKEN_ADMIN') {
+      req.user = { id: 1, role: 'Admin' };
+    } else if (req.headers.authorization === 'Bearer TEST_TOKEN_OWNER') {
+      req.user = { id: 2, role: 'Musician' };
+    } else if (req.headers.authorization === 'Bearer TEST_TOKEN_OTHER') {
+      req.user = { id: 3, role: 'Musician' };
+    } else {
+      return res.status(401).json({ error: 'Token no válido' });
+    }
+    next();
+  },
+  // Faltaba simular esta función para que las rutas de canciones no exploten al cargar app.ts
+  verifyAdmin: (req: any, res: any, next: any) => {
+    if (req.user && req.user.role === 'Admin') {
+      next();
+    } else {
+      return res.status(403).json({ error: 'Requiere rol de Administrador' });
+    }
+  }
+}));
+
+describe('Setlists Controller', () => {
   
-  let adminId: number;
-  let musico1Id: number;
-  let musico2Id: number;
-  
-  let testSong1Id: number;
-  let testSong2Id: number;
-  let musico1SetlistId: number;
-
-  const JWT_SECRET = process.env.JWT_SECRET || 'super_secreto_desarrollo';
-
-  beforeAll(async () => {
-    await pool.query('DELETE FROM setlist_songs');
-    await pool.query('DELETE FROM setlists');
-    await pool.query("DELETE FROM users WHERE email LIKE '%@setlist-test.com'");
-    await pool.query("DELETE FROM songs WHERE title LIKE 'Cancion Setlist%'");
-
-    const passwordHash = await bcrypt.hash('password123', 10);
-
-    const insertUserQuery = `
-      INSERT INTO users (email, password_hash, name, birth_date, role, status) 
-      VALUES ($1, $2, $3, $4, $5, 'Aprobado') RETURNING id
-    `;
-
-    const adminRes = await pool.query(insertUserQuery, ['admin@setlist-test.com', passwordHash, 'Admin Test', '1980-01-01', 'Admin']);
-    adminId = adminRes.rows[0].id;
-    adminToken = jwt.sign({ id: adminId, email: 'admin@setlist-test.com', role: 'Admin' }, JWT_SECRET, { expiresIn: '1h' });
-
-    const m1Res = await pool.query(insertUserQuery, ['m1@setlist-test.com', passwordHash, 'Usuario Uno', '1995-05-05', 'Usuario']);
-    musico1Id = m1Res.rows[0].id;
-    musico1Token = jwt.sign({ id: musico1Id, email: 'm1@setlist-test.com', role: 'Usuario' }, JWT_SECRET, { expiresIn: '1h' });
-
-    const m2Res = await pool.query(insertUserQuery, ['m2@setlist-test.com', passwordHash, 'Usuario Dos', '1998-08-08', 'Usuario']);
-    musico2Id = m2Res.rows[0].id;
-    musico2Token = jwt.sign({ id: musico2Id, email: 'm2@setlist-test.com', role: 'Usuario' }, JWT_SECRET, { expiresIn: '1h' });
-
-    const insertSongQuery = `
-      INSERT INTO songs (title, author, original_key, tempo, category, content)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-    `;
-    const song1Res = await pool.query(insertSongQuery, ['Cancion Setlist A', 'Autor A', 'C', 120, 'Alabanza', 'Letra A']);
-    testSong1Id = song1Res.rows[0].id;
-    
-    const song2Res = await pool.query(insertSongQuery, ['Cancion Setlist B', 'Autor B', 'G', 80, 'Adoracion', 'Letra B']);
-    testSong2Id = song2Res.rows[0].id;
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    // Esto garantiza que CUALQUIER espía se destruya después de cada prueba individual
-    jest.restoreAllMocks();
-  });
-
-  afterAll(async () => {
-    await pool.query('DELETE FROM setlist_songs');
-    await pool.query('DELETE FROM setlists');
-    await pool.query("DELETE FROM users WHERE email LIKE '%@setlist-test.com'");
-    await pool.query("DELETE FROM songs WHERE title LIKE 'Cancion Setlist%'");
-    await pool.end();
-  });
-
-  describe('1. Creación de Repertorios (POST /api/setlists)', () => {
-    it('Debería denegar el acceso sin token (401)', async () => {
-      const res = await request(app).post('/api/setlists').send({ name: 'Domingo AM' });
-      expect(res.status).toBe(401);
-    });
-
-    it('Debería retornar 400 si falta el nombre del repertorio', async () => {
-      const res = await request(app)
+  describe('createSetlist', () => {
+    it('Debe devolver 400 si falta el nombre', async () => {
+      const response = await request(app)
         .post('/api/setlists')
-        .set('Authorization', `Bearer ${musico1Token}`)
-        .send({ event_date: '2026-10-10' });
-      expect(res.status).toBe(400);
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({});
+      expect(response.status).toBe(400);
     });
 
-    it('Debería permitir a un Músico crear un repertorio (201)', async () => {
-      const res = await request(app)
+    it('Debe crear un repertorio exitosamente como Borrador', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'Test Setlist', status: 'Borrador' }] } as never);
+      const response = await request(app)
         .post('/api/setlists')
-        .set('Authorization', `Bearer ${musico1Token}`)
-        .send({ name: 'Ensayo Músico 1', event_date: '2026-10-10' });
-      expect(res.status).toBe(201);
-      musico1SetlistId = res.body.setlist.id;
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ name: 'Test Setlist' });
+      expect(response.status).toBe(201);
+      expect(response.body.message).toBe('Repertorio creado exitosamente');
+    });
+
+    it('Debe capturar errores de base de datos en createSetlist', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .post('/api/setlists')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ name: 'Test Setlist' });
+      expect(response.status).toBe(500);
     });
   });
 
-  describe('2. Lectura de Repertorios (GET /api/setlists)', () => {
-    it('Debería listar todos los repertorios (200)', async () => {
-      const res = await request(app).get('/api/setlists').set('Authorization', `Bearer ${musico2Token}`);
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBeTruthy();
+  describe('getSetlists', () => {
+    it('Debe retornar la lista de repertorios', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'Test Setlist' }] } as never);
+      const response = await request(app)
+        .get('/api/setlists')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
-    it('Debería retornar los detalles de un repertorio específico (200)', async () => {
-      const res = await request(app).get(`/api/setlists/${musico1SetlistId}`).set('Authorization', `Bearer ${musico1Token}`);
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('id', musico1SetlistId);
-    });
-
-    it('Debería retornar 404 si el repertorio no existe', async () => {
-      const res = await request(app).get('/api/setlists/999999').set('Authorization', `Bearer ${adminToken}`);
-      expect(res.status).toBe(404);
-    });
-  });
-
-  describe('3. Modificación de Repertorios (POST /api/setlists/:id/songs)', () => {
-    it('Debería permitir al creador agregar una canción con categoría y tono (201)', async () => {
-      const res = await request(app)
-        .post(`/api/setlists/${musico1SetlistId}/songs`)
-        .set('Authorization', `Bearer ${musico1Token}`)
-        .send({ 
-          song_id: testSong1Id, 
-          transposed_key: 'D', 
-          sort_order: 1,
-          group_name: 'Alabanza' // <-- Probamos el nuevo campo
-        });
-      expect(res.status).toBe(201);
-    });
-
-    it('Debería denegar agregar canción si el usuario no es Admin ni Creador (403)', async () => {
-      const res = await request(app)
-        .post(`/api/setlists/${musico1SetlistId}/songs`)
-        .set('Authorization', `Bearer ${musico2Token}`)
-        .send({ song_id: testSong2Id, transposed_key: 'D', sort_order: 2 });
-      expect(res.status).toBe(403);
+    it('Debe manejar error en getSetlists', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .get('/api/setlists')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(500);
     });
   });
 
-  describe('4. Actualización y Reordenamiento (PUT /api/setlists/:id/songs/order)', () => {
-    it('Debería permitir al creador actualizar el orden, categoría y tono (200)', async () => {
-      const newOrder = [{ 
-        song_id: testSong1Id, 
-        sort_order: 2, 
-        group_name: 'Adoración', // <-- Cambiamos la categoría
-        transposed_key: 'E'      // <-- Cambiamos el tono
-      }];
-      
-      const res = await request(app)
-        .put(`/api/setlists/${musico1SetlistId}/songs/order`)
-        .set('Authorization', `Bearer ${musico1Token}`)
-        .send({ songs: newOrder });
-      expect(res.status).toBe(200);
-
-      // Verificación estricta: Comprobamos que el GET devuelva los datos actualizados
-      const checkRes = await request(app)
-        .get(`/api/setlists/${musico1SetlistId}`)
-        .set('Authorization', `Bearer ${musico1Token}`);
-      
-      expect(checkRes.body.songs[0]).toHaveProperty('group_name', 'Adoración');
-      expect(checkRes.body.songs[0]).toHaveProperty('transposed_key', 'E');
+  describe('getSetlistById', () => {
+    it('Debe retornar 404 si el repertorio no existe', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .get('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(404);
     });
 
-    it('Debería denegar el reordenamiento a un usuario que no es dueño ni Admin (403)', async () => {
-      const newOrder = [{ song_id: testSong1Id, sort_order: 1 }];
-      const res = await request(app)
-        .put(`/api/setlists/${musico1SetlistId}/songs/order`)
-        .set('Authorization', `Bearer ${musico2Token}`)
-        .send({ songs: newOrder });
-      expect(res.status).toBe(403);
-    });
-  });
-
-  describe('5. Eliminación en Repertorios (DELETE)', () => {
-    let targetSetlistId: number;
-
-    beforeEach(async () => {
-      const tempRes = await pool.query(
-        "INSERT INTO setlists (name, user_id) VALUES ('Setlist para Borrar', $1) RETURNING id",
-        [musico1Id]
-      );
-      targetSetlistId = tempRes.rows[0].id;
-      await pool.query(
-        "INSERT INTO setlist_songs (setlist_id, song_id, sort_order) VALUES ($1, $2, 1)",
-        [targetSetlistId, testSong1Id]
-      );
+    it('Debe retornar 403 si el repertorio es Borrador y lo intenta ver otro usuario', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ id: 1, user_id: 2, status: 'Borrador' }] } as never);
+      const response = await request(app)
+        .get('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER'); 
+      expect(response.status).toBe(403);
     });
 
-    it('Debería denegar quitar canción si el usuario no es Admin ni Creador (403)', async () => {
-      const res = await request(app)
-        .delete(`/api/setlists/${targetSetlistId}/songs/${testSong1Id}`)
-        .set('Authorization', `Bearer ${musico2Token}`);
-      expect(res.status).toBe(403);
+    it('Debe retornar 200 si es Borrador y lo ve el dueño', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ id: 1, user_id: 2, status: 'Borrador' }] } as never); 
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never); 
+      const response = await request(app)
+        .get('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER'); 
+      expect(response.status).toBe(200);
     });
 
-    it('Debería permitir al creador quitar una canción (200)', async () => {
-      const res = await request(app)
-        .delete(`/api/setlists/${targetSetlistId}/songs/${testSong1Id}`)
-        .set('Authorization', `Bearer ${musico1Token}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('Debería denegar eliminar el repertorio completo si no es Admin ni Creador (403)', async () => {
-      const res = await request(app)
-        .delete(`/api/setlists/${targetSetlistId}`)
-        .set('Authorization', `Bearer ${musico2Token}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('Debería permitir al Admin eliminar un repertorio de otro usuario (200)', async () => {
-      const res = await request(app)
-        .delete(`/api/setlists/${targetSetlistId}`)
-        .set('Authorization', `Bearer ${adminToken}`);
-      expect(res.status).toBe(200);
+    it('Debe manejar errores de DB en getSetlistById', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .get('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(500);
     });
   });
 
-  describe('6. Manejo de Errores Internos en Repertorios (500)', () => {
-    beforeEach(() => {
-      // Usamos mockImplementation para evitar el error TS2345 de TypeScript de forma limpia
-      jest.spyOn(pool, 'query').mockImplementation(() => Promise.reject(new Error('Fallo simulado DB')));
+  describe('addSongToSetlist', () => {
+    it('Debe retornar 400 si no se envia song_id', async () => {
+      const response = await request(app)
+        .post('/api/setlists/1/songs')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({});
+      expect(response.status).toBe(400);
     });
 
-    it('Debería retornar 500 al fallar la creación', async () => {
-      const res = await request(app).post('/api/setlists').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Fallo' });
-      expect(res.status).toBe(500);
+    it('Debe retornar 404 si el setlist no existe al agregar', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .post('/api/setlists/1/songs')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ song_id: 1 });
+      expect(response.status).toBe(404);
     });
 
-    it('Debería retornar 500 al fallar la obtención por ID', async () => {
-      const res = await request(app).get('/api/setlists/999').set('Authorization', `Bearer ${adminToken}`);
-      expect(res.status).toBe(500);
+    it('Debe retornar 403 si un extraño intenta agregar canciones', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const response = await request(app)
+        .post('/api/setlists/1/songs')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER') 
+        .send({ song_id: 1 });
+      expect(response.status).toBe(403);
     });
 
-    it('Debería retornar 500 al fallar al eliminar repertorio', async () => {
-      const res = await request(app).delete('/api/setlists/999').set('Authorization', `Bearer ${adminToken}`);
-      expect(res.status).toBe(500);
+    it('Debe permitir a un admin agregar canciones al repertorio de otro', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never); 
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never); 
+      const response = await request(app)
+        .post('/api/setlists/1/songs')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN') 
+        .send({ song_id: 1 });
+      expect(response.status).toBe(201);
+    });
+
+    it('Debe manejar error interno al agregar canción', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .post('/api/setlists/1/songs')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ song_id: 1 });
+      expect(response.status).toBe(500);
     });
   });
 
-  describe('7. Temas de Repertorios (Coverage)', () => {
-    it('Debería retornar 404 al intentar actualizar el tema de un repertorio inexistente', async () => {
-      const res = await request(app)
-        .put('/api/setlists/999999/theme')
-        .set('Authorization', `Bearer ${adminToken}`)
+  describe('removeSongFromSetlist', () => {
+    it('Debe retornar 404 si el setlist no existe', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .delete('/api/setlists/1/songs/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(404);
+    });
+
+    it('Debe retornar 403 si alguien no autorizado intenta borrar', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const response = await request(app)
+        .delete('/api/setlists/1/songs/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER');
+      expect(response.status).toBe(403);
+    });
+
+    it('Debe permitir al creador borrar la canción', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never); 
+      const response = await request(app)
+        .delete('/api/setlists/1/songs/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER');
+      expect(response.status).toBe(200);
+    });
+
+    it('Debe capturar error DB al remover canción', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .delete('/api/setlists/1/songs/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('deleteSetlist', () => {
+    it('Debe retornar 404 al borrar setlist inexistente', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .delete('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(404);
+    });
+
+    it('Debe retornar 403 si no es admin ni owner', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const response = await request(app)
+        .delete('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER');
+      expect(response.status).toBe(403);
+    });
+
+    it('Debe borrar el setlist exitosamente', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 1 }] } as never);
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .delete('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(200);
+    });
+
+    it('Debe atrapar error en deleteSetlist', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .delete('/api/setlists/1')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('updateSetlistTheme', () => {
+    it('Debe devolver 404 si el repertorio no existe', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .put('/api/setlists/1/theme')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
         .send({ theme_id: 1 });
-      
-      expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('error', 'Repertorio no encontrado');
+      expect(response.status).toBe(404);
     });
 
-    it('Debería denegar la actualización del tema a un usuario que no es el creador', async () => {
-      const res = await request(app)
-        .put(`/api/setlists/${musico1SetlistId}/theme`)
-        .set('Authorization', `Bearer ${musico2Token}`) // Músico 2 intenta editar el setlist del Músico 1
+    it('Debe devolver 403 si un usuario intenta cambiar el tema de otro', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const response = await request(app)
+        .put('/api/setlists/1/theme')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER')
         .send({ theme_id: 1 });
+      expect(response.status).toBe(403);
+    });
+
+    it('Debe permitir al creador cambiar el tema', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .put('/api/setlists/1/theme')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER')
+        .send({ theme_id: 1 });
+      expect(response.status).toBe(200);
+    });
+
+    it('Debe manejar errores de DB al actualizar tema', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB') as never);
+      const response = await request(app)
+        .put('/api/setlists/1/theme')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ theme_id: 1 });
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('reorderSetlistSongs', () => {
+    it('Debe fallar si no envia array de songs', async () => {
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ songs: 'invalid' });
+      expect(response.status).toBe(400);
+    });
+
+    it('Debe regresar 404 si no encuentra el setlist', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ songs: [] });
+      expect(response.status).toBe(404);
+    });
+
+    it('Debe regresar 403 si se intenta reordenar setlist de otro', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER')
+        .send({ songs: [] });
+      expect(response.status).toBe(403);
+    });
+
+    it('Debe ejecutar la transacción para reordenar', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
       
-      expect(res.status).toBe(403);
-      expect(res.body).toHaveProperty('error', 'No tienes permisos para modificar este repertorio');
+      const mockClient = {
+        query: jest.fn(),
+        release: jest.fn(),
+      };
+      mockedPool.connect.mockResolvedValueOnce(mockClient as never);
+      
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER')
+        .send({ songs: [{ song_id: 1, sort_order: 1 }] });
+      
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
+      expect(response.status).toBe(200);
+    });
+
+    it('Debe hacer ROLLBACK si la transacción falla', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2 }] } as never);
+      const mockClient = {
+        query: jest.fn().mockImplementation((q) => {
+          if (q.includes('UPDATE')) throw new Error('Fallo en update');
+          return Promise.resolve();
+        }),
+        release: jest.fn(),
+      };
+      mockedPool.connect.mockResolvedValueOnce(mockClient as never);
+      
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER')
+        .send({ songs: [{ song_id: 1, sort_order: 1 }] });
+      
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(response.status).toBe(500);
+    });
+
+    it('Debe manejar errores de DB de la validacion inicial en reordenar', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB inicial') as never);
+      const response = await request(app)
+        .put('/api/setlists/1/songs/order')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN')
+        .send({ songs: [] });
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('publishSetlist', () => {
+    it('Debe regresar 404 si el setlist no existe al publicar', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .patch('/api/setlists/1/publish')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(404);
+    });
+
+    it('Debe retornar 403 si alguien más intenta publicar', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2, status: 'Borrador' }] } as never);
+      const response = await request(app)
+        .patch('/api/setlists/1/publish')
+        .set('Authorization', 'Bearer TEST_TOKEN_OTHER');
+      expect(response.status).toBe(403);
+    });
+
+    it('Debe retornar 400 si ya esta publicado', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2, status: 'Publicado' }] } as never);
+      const response = await request(app)
+        .patch('/api/setlists/1/publish')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER');
+      expect(response.status).toBe(400);
+    });
+
+    it('Debe publicar el repertorio correctamente', async () => {
+      mockedPool.query.mockResolvedValueOnce({ rows: [{ user_id: 2, status: 'Borrador' }] } as never);
+      mockedPool.query.mockResolvedValueOnce({ rows: [] } as never);
+      const response = await request(app)
+        .patch('/api/setlists/1/publish')
+        .set('Authorization', 'Bearer TEST_TOKEN_OWNER');
+      expect(response.status).toBe(200);
+    });
+
+    it('Debe manejar error interno de la BD al publicar', async () => {
+      mockedPool.query.mockRejectedValueOnce(new Error('Fallo DB al publicar') as never);
+      const response = await request(app)
+        .patch('/api/setlists/1/publish')
+        .set('Authorization', 'Bearer TEST_TOKEN_ADMIN');
+      expect(response.status).toBe(500);
     });
   });
 });
