@@ -45,7 +45,6 @@ const CancionDetalle: React.FC = () => {
     fetchSong();
   }, [id]);
 
-  // Manejador para eliminar canción
   const handleDelete = async () => {
     if (!song || !song.id) return;
     const confirmDelete = window.confirm('¿Está seguro de que desea eliminar esta canción? (Se enviará a la papelera)');
@@ -96,16 +95,15 @@ const CancionDetalle: React.FC = () => {
     <div className="cancion-detalle-container">
       <header className="cd-header">
         
-        {/* Fila Superior: Botón Volver (Izquierda) y Botones de Impresión/Video (Derecha) */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')} style={{ margin: 0 }}>
+        {/* Fila Superior: Extraída de estilos en línea */}
+        <div className="cd-top-row">
+          <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
             &larr; Volver
           </button>
 
-          <div className="cd-actions-right" style={{ gap: '8px' }}>
+          <div className="cd-actions-right">
             <select 
               className="print-controls"
-              style={{ padding: '0.4rem', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#1e293b', color: '#e2e8f0', fontSize: '0.85rem' }}
               value={printColumns}
               onChange={(e) => setPrintColumns(Number(e.target.value) as 1 | 2)}
             >
@@ -113,43 +111,42 @@ const CancionDetalle: React.FC = () => {
               <option value={2}>📖 2 Columnas</option>
             </select>
 
-            <button onClick={() => window.print()} className="cd-print-btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+            <button onClick={() => window.print()} className="cd-print-btn">
               🖨️ Imprimir PDF
             </button>
             
             {song.video_link && (
-              <a href={song.video_link} target="_blank" rel="noreferrer" className="cd-video-btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
-                🎥 Ver en YouTube
+              <a href={song.video_link} target="_blank" rel="noreferrer" className="cd-video-btn">
+                🎥 YouTube
               </a>
             )}
           </div>
         </div>
 
-        {/* Fila Admin: Botones de Gestión (Solo visibles para administradores) */}
+        {/* Fila Admin: Extraída de estilos en línea */}
         {role === 'Admin' && (
-          <div className="admin-controls-row" style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <div className="admin-controls-row">
             <button 
+              className="cd-btn-edit"
               onClick={() => navigate(`/cancion/editar/${song.id}`)}
-              style={{ backgroundColor: '#f59e0b', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '4px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               ✏️ Editar
             </button>
             <button 
-              onClick={() => navigate(`/cancion/historial/${song.id}`)} /* Ruta corregida aquí */
-              style={{ backgroundColor: '#3b82f6', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '4px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+              className="cd-btn-history"
+              onClick={() => navigate(`/cancion/historial/${song.id}`)}
             >
-              📜 Ver Historial
+              📜 Historial
             </button>
             <button 
+              className="cd-btn-delete"
               onClick={handleDelete}
-              style={{ backgroundColor: '#ef4444', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '4px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               🗑️ Eliminar
             </button>
           </div>
         )}
         
-        {/* Título de la Canción */}
         <div className="cd-title-row">
           <div>
             <div className="cd-title-area">
@@ -163,7 +160,6 @@ const CancionDetalle: React.FC = () => {
         </div>
       </header>
 
-      {/* Barra de Metadatos y Etiquetas Integradas */}
       <div className="cd-meta-bar">
         <div className="cd-meta-item">
           <span className="cd-meta-label">Tono:</span>
@@ -177,14 +173,13 @@ const CancionDetalle: React.FC = () => {
           <span className="cd-meta-label">Categoría:</span>
           <span className="cd-meta-value">{song.category}</span>
         </div>
-        {/* Envoltorio de Etiquetas Integradas para ocupar el espacio a la derecha */}
+        
         <div className="cd-meta-tags-wrapper">
           {renderTags()}
         </div>
       </div>
 
       <div className="cd-content-area">
-        {/* APLICAMOS LA CLASE CONDICIONAL PARA 2 COLUMNAS */}
         <pre className={`cd-lyrics ${printColumns === 2 ? 'print-two-columns' : ''}`}>
           {song.content}
         </pre>
