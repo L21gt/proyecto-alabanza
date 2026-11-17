@@ -4,7 +4,6 @@ import { getSetlists, createSetlist, deleteSetlist } from '../services/setlists.
 import type { Setlist } from '../types';
 import './Repertorios.css';
 
-// 1. Usamos Omit para quitar el user_id base de Setlist y reescribirlo, evitando el choque de tipos
 interface SetlistExtended extends Omit<Setlist, 'user_id'> {
   owner_name?: string;
   user_id: number | null; 
@@ -65,7 +64,6 @@ const Repertorios: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Definimos una función asíncrona autoejecutable dentro del efecto
     const init = async () => {
       await fetchSetlists();
     };
@@ -108,10 +106,7 @@ const Repertorios: React.FC = () => {
       <header className="repertorios-header">
         <h2 className="repertorios-title">Gestor de Repertorios</h2>
         <div className="repertorios-header-actions">
-          <button 
-            onClick={() => navigate('/catalogo')} 
-            className="btn-secondary"
-          >
+          <button onClick={() => navigate('/catalogo')} className="btn-secondary">
             Ir al Catálogo
           </button>
         </div>
@@ -157,17 +152,14 @@ const Repertorios: React.FC = () => {
             return (
               <div 
                 key={setlist.id} 
-                className="setlist-card setlist-card-clickable"
+                className={`setlist-card setlist-card-clickable ${setlist.status === 'Borrador' ? 'is-draft' : ''}`}
                 onClick={() => navigate(`/repertorios/${setlist.id}`)}
-                style={{ opacity: setlist.status === 'Borrador' ? 0.8 : 1 }}
               >
                 <div className="setlist-card-content">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="setlist-card-header-row">
                     <h3 className="setlist-name">{setlist.name}</h3>
                     {setlist.status === 'Borrador' && (
-                      <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                        Borrador
-                      </span>
+                      <span className="badge-draft">Borrador</span>
                     )}
                   </div>
                   <p className="setlist-date">
@@ -175,7 +167,7 @@ const Repertorios: React.FC = () => {
                       ? new Date(setlist.event_date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) 
                       : 'Sin fecha programada'}
                   </p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  <p className="setlist-owner">
                     De: {setlist.owner_name || 'Usuario'}
                   </p>
                 </div>

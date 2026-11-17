@@ -350,75 +350,142 @@
   }
 }
 
-/* --- Impresión (PDF) Limpia y Blanca --- */
+/* =========================================================
+   IMPRESIÓN (PDF) PARA CANCIÓN INDIVIDUAL
+   ========================================================= */
 @media print {
-  html, body, #root, .cancion-detalle-container {
+  /* Reseteo absoluto para que el navegador controle la paginación con su flujo normal */
+  html, body, #root {
+    background-color: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important; 
+    min-height: auto !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* El truco del Padding: Convertimos al contenedor de la canción en los márgenes de la página física */
+  .cancion-detalle-container {
     background-color: white !important;
     color: black !important;
     box-shadow: none !important;
+    border: none !important;
     margin: 0 !important;
-    padding: 0 !important;
-    display: block !important;
-    position: static !important;
+    /* ESTE ES EL MARGEN DE IMPRESIÓN (1.5cm a la redonda) */
+    padding: 1.5cm 1.5cm !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
     height: auto !important;
+    min-height: auto !important;
+    display: block !important; 
   }
   
-  .cd-top-row .btn-back, 
-  .cd-actions-right,
+  /* Ocultar interfaz de navegación web */
+  .cd-top-row,
   .admin-controls-row {
     display: none !important;
   }
   
+  /* Encabezado */
+  .cd-header {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important; 
+    margin-bottom: 2rem !important;
+    padding-top: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .cd-title-area {
+    display: flex !important;
+    justify-content: center !important;
+  }
+  
   .cd-title-area h2, 
-  .cd-author, 
-  .cd-lyrics {
+  .cd-author {
     color: black !important;
   }
   
+  /* Metadatos */
   .cd-meta-bar {
+    display: flex !important;
     background-color: transparent !important;
     border: 1px solid #ccc !important;
-    margin-bottom: 1.5rem !important;
+    margin-bottom: 2rem !important;
+    width: 100% !important; 
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    padding: 1rem !important;
     break-inside: avoid !important;
-    flex-wrap: wrap !important; 
+    page-break-inside: avoid !important;
+    box-sizing: border-box !important;
   }
   
   .cd-meta-label { color: #555 !important; }
   .cd-meta-value { color: black !important; }
   
-  .cd-content-area {
-    background-color: transparent !important;
-    border: none !important;
-    padding: 0 !important; 
-    display: block !important;
-    height: auto !important;
+  .cd-tags-container {
+    justify-content: center !important;
   }
-
-  .cd-lyrics {
-    display: block !important;
-    width: fit-content !important;
-    margin: 0 auto !important;
-    font-size: 14px !important;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif !important;
-    orphans: 3 !important;
-    widows: 3 !important;
-  }
-
-  .print-two-columns {
-    width: 100% !important;
-    column-count: 2 !important;
-    column-gap: 3rem !important;
-    column-rule: 1px dashed #ccc;
-    display: block !important;
-  }
-
+  
   .cd-tag {
     background-color: #f1f5f9 !important;
     color: #334155 !important;
     border: 1px solid #cbd5e1 !important;
   }
+  
+  /* Contenedor de la Letra */
+  .cd-content-area {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important; 
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Letra (Vista Normal a 1 Columna) */
+  .cd-lyrics {
+    display: block !important; 
+    width: fit-content !important; 
+    margin: 0 auto !important; /* Centrado perfecto horizontal */
+    padding: 0 !important;
+    
+    /* Permite que el texto fluya de una página a otra con suavidad */
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    
+    font-size: 14px !important;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif !important;
+    text-align: left !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+    color: black !important;
+    white-space: pre-wrap !important; 
+  }
+
+  /* Letra (Vista a 2 Columnas) */
+  .cd-lyrics.print-two-columns {
+    width: 100% !important; /* Destruye el 'fit-content' para usar toda la hoja dividida */
+    margin: 0 !important; /* Aseguramos que inicie en el borde izquierdo virtual que creamos con el padding */
+    column-count: 2 !important;
+    column-gap: 3rem !important; 
+    column-rule: 1px dashed #ccc;
+    text-align: left !important;
+  }
 }
 
+/* 
+ * ================================================================
+ * ALERTA NAVEGADOR
+ * Le decimos a Chrome que ponga su margen físico a 0.
+ * Nosotros manejamos el margen real con el padding de .cancion-detalle-container
+ * ================================================================
+ */
 @page {
-  margin: 1.5cm 1.5cm; 
+  size: auto;
+  margin: 0mm; 
 }

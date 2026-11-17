@@ -240,28 +240,139 @@
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-/* Responsividad para móviles */
-@media (max-width: 600px) {
-  .rd-result-card, .rd-song-row {
+/* --- Clases extraídas de React (Aplica general) --- */
+.rd-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.rd-draft-badge {
+  background-color: #f59e0b;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.rd-author {
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #94a3b8;
+}
+.rd-readonly-badge {
+  color: #ef4444;
+  font-weight: bold;
+  margin-left: 5px;
+}
+.rd-theme-selector-label {
+  font-weight: bold;
+  margin-right: 5px;
+  color: #f8fafc;
+}
+.rd-add-song-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.rd-add-song-header h3 { margin: 0; }
+
+.readonly-select {
+  cursor: default;
+  background: transparent;
+  border: none;
+  padding-left: 0;
+}
+.btn-success {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+}
+.rd-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* =========================================
+   Ajustes Minúsculos para Dispositivos Móviles
+========================================= */
+@media (max-width: 768px) {
+  .repertorio-detalle-container { padding: 0.8rem; margin: 0.5rem; }
+  
+  .rd-header-layout {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
   
-  .rd-result-actions {
+  .rd-header-left { width: 100%; }
+  
+  .rd-title { font-size: 1.4rem; margin: 0; }
+  .rd-date, .rd-author { font-size: 0.8rem; margin: 0.1rem 0; }
+  
+  .rd-header-actions-align {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+  
+  .rd-theme-selector-container {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background-color: #0f172a;
+    padding: 0.6rem;
+    border-radius: 6px;
   }
   
-  .rd-song-meta {
-    margin-right: 0;
-    margin-top: 0.5rem;
+  .rd-theme-selector-label { font-size: 0.8rem; margin: 0; }
+  .rd-theme-select { flex: 1; margin-left: 10px; font-size: 0.8rem; padding: 0.3rem; }
+  
+  .rd-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 0.5rem;
+    width: 100%;
   }
   
-  .rd-song-remove {
-    align-self: flex-end;
-    margin-top: -2rem;
+  .rd-action-buttons button,
+  .rd-btn-print, 
+  .rd-btn-presentation, 
+  .rd-btn-publish {
+    font-size: 0.85rem !important; 
+    padding: 0.5rem 0.4rem !important; 
+    width: 100%;
+    text-align: center;
+    border-radius: 4px; 
+    white-space: nowrap; 
   }
+  
+  .rd-add-song-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+  .rd-add-song-header h3 { font-size: 1.1rem; text-align: center; }
+  .rd-add-song-header .btn-primary { font-size: 0.8rem; padding: 0.6rem; }
+  
+  .rd-search-input { font-size: 0.85rem; padding: 0.6rem; }
+  
+  .kanban-board { flex-direction: column; }
+  .kanban-column { min-width: 100%; margin-bottom: 1rem; }
+  .kanban-card { padding: 0.8rem; gap: 0.4rem; }
+  .kanban-song-title-link { font-size: 0.95rem; }
+  .kanban-card-author { font-size: 0.75rem; margin: 0; }
+  .kanban-select { font-size: 0.75rem; padding: 0.2rem; }
+  .rd-tempo { font-size: 0.7rem; }
 }
 
 /* ========================================== */
@@ -297,7 +408,7 @@
   color: var(--text-secondary, #94a3b8);
   font-size: 1.2rem;
   padding-right: 0.75rem;
-  user-select: none; /* Evita que el texto se seleccione al arrastrar */
+  user-select: none; 
   display: flex;
   align-items: center;
 }
@@ -315,7 +426,7 @@
 
 .rd-song-row.drag-over {
   border-top: 2px solid var(--accent-color, #3b82f6);
-  padding-top: calc(1rem - 2px); /* Compensa el borde para evitar saltos bruscos */
+  padding-top: calc(1rem - 2px); 
 }
 
 .rd-song-title-link {
@@ -328,14 +439,12 @@
   text-decoration: underline;
 }
 
-/* Contenedor de controles de la canción (meta) */
 .rd-meta-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-/* Estilo base para los selectores de Categoría y Tono */
 .rd-select-meta {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -347,13 +456,11 @@
   outline: none;
 }
 
-/* Resaltado rojo cuando falta asignar el momento del servicio */
 .rd-select-unassigned {
   border: 1px solid #ef4444;
   color: #ef4444;
 }
 
-/* Adaptación para modo oscuro si tienes las variables configuradas */
 [data-theme='dark'] .rd-select-meta {
   background-color: var(--bg-secondary, #334155);
   color: var(--text-primary, #f8fafc);
@@ -364,8 +471,6 @@
    ESTILOS DEL TABLERO KANBAN
 ================================== */
 
-/* Opcional: Si el contenedor global (.container) te está limitando, 
-   esto fuerza a que la vista de repertorios se expanda en monitores grandes */
 .repertorio-detalle-container {
   max-width: 1400px; 
   margin: 0 auto;
@@ -373,22 +478,15 @@
 }
 
 .kanban-board {
-  /* Cambiamos Flexbox por Grid para un control bidimensional */
   display: grid;
-  
-  /* LA MAGIA RESPONSIVA: 
-     - auto-fit: Crea tantas columnas como quepan.
-     - minmax: Cada columna medirá al menos 240px. Si hay más espacio, crecerán (1fr) para llenarlo.
-     - En móviles, como no caben 240px lado a lado, se apilarán verticalmente solas. */
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
   padding: 1rem 0 2rem 0;
   min-height: 400px;
-  align-items: start; /* Evita que columnas vacías se estiren hacia abajo de forma extraña */
+  align-items: start; 
 }
 
 .kanban-column {
-  /* Eliminamos el 'flex: 0 0 320px' que causaba la barra de desplazamiento */
   background-color: var(--bg-secondary, #f8fafc);
   border-radius: 8px;
   border: 1px solid var(--border-color, #e2e8f0);
@@ -434,14 +532,13 @@
   flex-grow: 1;
   min-height: 150px;
   transition: background-color 0.2s ease;
-  height: 100%; /* Asegura que puedas soltar tarjetas en toda el área de la columna */
+  height: 100%; 
 }
 
 .kanban-droppable.dragging-over {
   background-color: rgba(59, 130, 246, 0.1);
 }
 
-/* Tarjetas (Canciones) */
 .kanban-card {
   background-color: white;
   border: 1px solid var(--border-color, #e2e8f0);
@@ -504,9 +601,7 @@
    MODO IMPRESIÓN / EXPORTAR PDF
 ================================== */
 .printable-setlist-pdf {
-  display: none; /* Oculto en la web */
-  
-  /* Variables inyectadas por React para los Temas */
+  display: none; 
   background: var(--theme-bg, white);
   color: var(--theme-color, black);
   font-family: var(--theme-font, inherit);
@@ -515,17 +610,10 @@
   background-position: center;
 }
 
-/* --- Impresión (PDF) Limpia y a Pantalla Completa --- */
 @media print {
-  @page {
-    margin: 0; 
-  }
+  @page { margin: 0; }
   
-  header, 
-  .rd-header, 
-  .rd-search-section, 
-  .rd-kanban-section, 
-  .rd-divider {
+  header, .rd-header, .rd-search-section, .rd-kanban-section, .rd-divider {
     display: none !important;
   }
   
@@ -538,12 +626,11 @@
     box-shadow: none !important;
   }
 
-  /* El Pergamino */
   .printable-setlist-pdf {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;     /* Centrado Horizontal */
-    justify-content: center !important; /* Centrado Vertical */
+    align-items: center !important;     
+    justify-content: center !important; 
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -586,13 +673,13 @@
     flex-direction: column;
     gap: 1.5rem !important;
     width: 100% !important;
-    align-items: center !important; /* Centra el bloque de categorías */
+    align-items: center !important; 
   }
 
   .pdf-category-section {
     page-break-inside: avoid !important; 
     margin-bottom: 1rem !important;
-    text-align: center !important; /* Centra texto interno */
+    text-align: center !important; 
     width: 100% !important;
   }
 
@@ -603,7 +690,7 @@
     padding-bottom: 0.3rem !important;
     margin-bottom: 0.8rem !important;
     font-family: var(--theme-font) !important;
-    display: inline-block !important; /* Evita que la línea de abajo ocupe todo el ancho */
+    display: inline-block !important; 
   }
 
   .pdf-category-section ul {
@@ -632,7 +719,6 @@
   text-decoration-color: var(--accent-color, #3b82f6);
 }
 
-/* Nuevas clases extraídas de RepertorioDetalle.tsx */
 .rd-header-layout {
   display: flex;
   justify-content: space-between;
@@ -644,57 +730,20 @@
   gap: 1rem;
 }
 
-.rd-btn-print {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-}
-
+/* Modificación: Botones en escritorio reducidos */
+.rd-btn-print,
 .rd-btn-presentation {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  background-color: #10b981;
-  color: white;
+  padding: 0.5rem 1rem; /* Reducido de 0.75rem 1.5rem */
+  font-size: 0.95rem; /* Reducido de 1.1rem */
+  border-radius: 4px; /* Un poco más cuadrados */
 }
+.rd-btn-presentation { background-color: #10b981; color: white; border: none; font-weight: bold; cursor: pointer; }
 
-.rd-result-info-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.rd-select-margin {
-  margin-left: 10px;
-}
-
-.rd-btn-margin {
-  margin-left: 10px;
-}
-
-.rd-kanban-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* =========================================
-   SELECTOR DE TEMAS (Kanban Header)
-========================================= */
-.rd-header-actions-align {
-  align-items: center;
-}
-
-.rd-theme-selector-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rd-theme-selector-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.rd-theme-select {
-  padding: 0.5rem;
-  min-width: 150px;
-}
+.rd-result-info-layout { display: flex; flex-direction: column; gap: 0.2rem; }
+.rd-select-margin { margin-left: 10px; }
+.rd-btn-margin { margin-left: 10px; }
+.rd-kanban-header { display: flex; justify-content: space-between; align-items: center; }
+.rd-header-actions-align { align-items: center; }
+.rd-theme-selector-container { display: flex; align-items: center; gap: 0.5rem; }
+.rd-theme-selector-label { font-size: 0.9rem; color: var(--text-secondary); }
+.rd-theme-select { padding: 0.5rem; min-width: 150px; }

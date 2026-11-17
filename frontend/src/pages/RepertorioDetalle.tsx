@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder, updateSetlistTheme } from '../services/setlists.service';
+import { getSetlistById, addSongToSetlist, removeSongFromSetlist, updateSetlistOrder, updateSetlistTheme, publishSetlist } from '../services/setlists.service';
 import { getSongs } from '../services/songs.service';
 import { getThemes } from '../services/themes.service';
 import type { Setlist, Song, SetlistSong, Theme } from '../types';
@@ -11,6 +11,7 @@ import './RepertorioDetalle.css';
 interface SetlistExtended extends Setlist {
   owner_id?: number;
   owner_name?: string;
+  status?: string;
 }
 
 const KANBAN_COLUMNS = ['Sin Asignar', 'ALABANZA', 'ADORACIÓN', 'OFRENDAS', 'MINISTRACIÓN', 'SANTA CENA'];
@@ -230,6 +231,16 @@ const RepertorioDetalle: React.FC = () => {
     return true;
   };
 
+  const handlePublish = async () => {
+    if (!id || !window.confirm('¿Publicar este repertorio? Ya será visible para todos los músicos.')) return;
+    try {
+      await publishSetlist(id);
+      await fetchSetlistDetails();
+    } catch (err) {
+      if (err instanceof Error) alert(err.message);
+    }
+  };
+
   const [themes, setThemes] = useState<Theme[]>([]);
 
   useEffect(() => {
@@ -263,20 +274,23 @@ const RepertorioDetalle: React.FC = () => {
   return (
     <div className="repertorio-detalle-container">
       <header className="rd-header rd-header-layout">
-        <div>
+        <div className="rd-header-left">
           <button className="btn-back" onClick={() => navigate('/repertorios')}>&larr; Volver a Repertorios</button>
-          <h2 className="rd-title">{setlist.name}</h2>
+          <div className="rd-title-group">
+            <h2 className="rd-title">{setlist.name}</h2>
+            {setlist.status === 'Borrador' && <span className="rd-draft-badge">Borrador</span>}
+          </div>
           {setlist.event_date && <p className="rd-date">{new Date(setlist.event_date).toLocaleDateString('es-ES')}</p>}
-          <p className="rd-date" style={{ marginTop: '0.2rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
+          <p className="rd-author">
               Creado por: {setlist.owner_name || 'Usuario Desconocido'} 
-              {!isOwnerOrAdmin && <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '5px' }}>(Modo Lectura)</span>}
+              {!isOwnerOrAdmin && <span className="rd-readonly-badge">(Modo Lectura)</span>}
           </p>
         </div>
         
         <div className="rd-header-actions rd-header-actions-align">
           {isOwnerOrAdmin && (
               <div className="rd-theme-selector-container">
-                <label className="rd-theme-selector-label" style={{ fontWeight: 'bold', marginRight: '5px' }}>Tema PDF:</label>
+                <label className="rd-theme-selector-label">Tema PDF:</label>
                 <select 
                   className="rd-select-meta rd-theme-select" 
                   value={setlist.theme_id || ''} 
@@ -290,40 +304,45 @@ const RepertorioDetalle: React.FC = () => {
               </div>
           )}
 
-          <button 
-            className="btn-secondary rd-btn-print" 
-            onClick={() => {
-              if (isSetlistComplete()) {
-                window.print();
-              }
-            }}
-          >
-            🖨️ PDF / Imprimir
-          </button>
+          {/* Botón de publicar solo para dueños si está en Borrador */}
+          {isOwnerOrAdmin && setlist.status === 'Borrador' && (
+            <button className="btn-success rd-btn-publish" onClick={handlePublish}>
+              ✅ Publicar Repertorio
+            </button>
+          )}
 
-          <button 
-            className="btn-primary rd-btn-presentation" 
-            onClick={() => {
-              if (isSetlistComplete()) {
-                navigate(`/repertorios/${id}/presentacion`);
-              }
-            }}
-          >
-            ▶ Presentación
-          </button>
+          <div className="rd-action-buttons">
+            <button 
+              className="btn-secondary rd-btn-print" 
+              onClick={() => {
+                if (isSetlistComplete()) window.print();
+              }}
+            >
+              🖨️ Imprimir
+            </button>
+
+            <button 
+              className="btn-primary rd-btn-presentation" 
+              onClick={() => {
+                if (isSetlistComplete()) navigate(`/repertorios/${id}/presentacion`);
+              }}
+            >
+              ▶ Presentación
+            </button>
+          </div>
         </div>
       </header>
 
       {isOwnerOrAdmin && (
           <section className="rd-search-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0 }}>Agregar Canciones</h3>
+            <div className="rd-add-song-header">
+              <h3>Agregar Canciones</h3>
               <button 
                 className="btn-primary" 
                 onClick={() => navigate(`/cancion/nueva?repertorioId=${id}`)}
                 title="¿No encuentras la canción? Envíala para revisión"
               >
-                ➕ Sugerir Nueva Canción
+                ➕ Sugerir Nueva
               </button>
             </div>
 
@@ -349,7 +368,6 @@ const RepertorioDetalle: React.FC = () => {
                       <span>{song.author}</span>
                     </div>
                     <div className="rd-result-actions">
-                      {/* SELECTOR 1: BÚSQUEDA */}
                       <select className="rd-select-meta" value={selectedKeys[song.id] || song.original_key} onChange={(e) => setSelectedKeys({ ...selectedKeys, [song.id]: e.target.value })}>
                         <optgroup label="Mayores">
                           {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(k => <option key={k} value={k}>{k}</option>)}
@@ -387,7 +405,6 @@ const RepertorioDetalle: React.FC = () => {
               }) || [];
               
               if (columnId === 'Sin Asignar' && columnSongs.length === 0) return null;
-              
               if (!isOwnerOrAdmin && columnSongs.length === 0) return null;
 
               return (
@@ -425,7 +442,6 @@ const RepertorioDetalle: React.FC = () => {
                                 
                                 <div className="kanban-card-footer">
                                   {isOwnerOrAdmin ? (
-                                      /* SELECTOR 2: TABLERO KANBAN */
                                       <select 
                                         className="rd-select-meta kanban-select"
                                         value={song.transposed_key || song.original_key || ""} 
@@ -439,7 +455,7 @@ const RepertorioDetalle: React.FC = () => {
                                         </optgroup>
                                       </select>
                                   ) : (
-                                      <span className="rd-select-meta kanban-select" style={{ cursor: 'default', background: 'transparent', border: 'none', paddingLeft: 0 }}>
+                                      <span className="rd-select-meta kanban-select readonly-select">
                                           Tono: <strong>{song.transposed_key || song.original_key}</strong>
                                       </span>
                                   )}
@@ -460,6 +476,7 @@ const RepertorioDetalle: React.FC = () => {
         </DragDropContext>
       </section>
 
+      {/* Solo ESTE style inline se mantiene porque procesa variables CSS de la BD */}
       <div 
         className="printable-setlist-pdf"
         style={{

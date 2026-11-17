@@ -154,7 +154,6 @@ const Catalogo: React.FC = () => {
                   <span>Título / Autor</span>
                   <span>Tonalidad</span>
                   <span>Categoría</span>
-                  <span>Acción</span>
                 </div>
                 {songs.map((song) => (
                   <div 
@@ -166,14 +165,14 @@ const Catalogo: React.FC = () => {
                       <h4 className="song-item-title">{song.title}</h4>
                       <span className="song-item-author">{song.author}</span>
                     </div>
-                    <div className="song-item-key">
-                      <span className="badge-key">{song.original_key}</span>
-                    </div>
-                    <div className="song-item-category">
-                      <span>{song.category}</span>
-                    </div>
-                    <div className="song-item-action">
-                      <span className="action-link">Ver &rarr;</span>
+                    {/* Contenedor wrapper para Tonalidad y Categoría en móviles */}
+                    <div className="mobile-meta-row">
+                      <div className="song-item-key">
+                        <span className="badge-key">{song.original_key}</span>
+                      </div>
+                      <div className="song-item-category">
+                        <span>{song.category}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
