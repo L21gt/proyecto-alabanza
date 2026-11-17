@@ -124,6 +124,15 @@
   flex-wrap: wrap;
 }
 
+.print-controls {
+  padding: 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #475569;
+  background-color: #1e293b;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
 .cd-print-btn, .cd-video-btn {
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
@@ -139,7 +148,6 @@
 .cd-print-btn:hover { background-color: #2563eb; }
 .cd-video-btn { background-color: #f1f5f9; color: #0f172a; }
 .cd-video-btn:hover { background-color: #cbd5e1; }
-
 
 /* Controles de Administrador */
 .admin-controls-row {
@@ -161,7 +169,6 @@
 .cd-btn-edit { background-color: #f59e0b; }
 .cd-btn-history { background-color: #3b82f6; }
 .cd-btn-delete { background-color: #ef4444; }
-
 
 /* Barra de metadatos (Tonos, Tempo, Tags) */
 .cd-meta-bar {
@@ -241,7 +248,6 @@
 .cd-error-view p { color: #f8fafc; margin-top: 1rem; font-size: 1.1rem; }
 .cd-error-btn { margin-top: 2rem; }
 
-
 /* --- Responsive --- */
 @media (max-width: 768px) {
   .cancion-detalle-container { 
@@ -270,7 +276,7 @@
     flex-grow: 1; 
     text-align: center;
   }
-  
+
   .admin-controls-row {
     margin-bottom: 1rem;
     justify-content: space-between; 
@@ -337,11 +343,10 @@
 }
 
 /* =========================================================
-   IMPRESIÓN (PDF) PARA CANCIÓN INDIVIDUAL (DEFINTIVO)
+   IMPRESIÓN (PDF) PARA CANCIÓN INDIVIDUAL
    ========================================================= */
 
 @media print {
-  /* Reseteo maestro */
   html, body, #root {
     background-color: white !important;
     margin: 0 !important;
@@ -352,107 +357,128 @@
     overflow: visible !important;
   }
 
-  /* El contenedor recibe un padding de seguridad para evitar desbordes */
   .cancion-detalle-container {
     background-color: white !important;
     color: black !important;
     box-shadow: none !important;
     border: none !important;
-    margin: 0 auto !important;
-    padding: 1.5cm !important; /* Empuja todo hacia el centro de la hoja */
+    margin: 0 !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: none !important;
     height: auto !important;
     min-height: auto !important;
     display: block !important; 
-    box-sizing: border-box !important;
   }
   
-  /* Ocultar interfaz de navegación web */
+  /* Ocultar interfaz web */
   .cd-top-row,
-  .admin-controls-row {
+  .admin-controls-row,
+  .cd-version-badge,
+  .cd-status-badge {
     display: none !important;
   }
   
-  /* --- SOBREESCRIBIR LAS REGLAS DE ESCRITORIO --- */
-  
-  /* Centrado forzado del Título y Autor */
-  .cd-title-row {
+  /* CAJA UNIFICADA Y COMPACTA PARA IMPRESIÓN */
+  .cd-print-header-box {
     display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important; /* Obliga al centro */
-    justify-content: center !important;
-    width: 100% !important;
-    margin-bottom: 2rem !important;
-  }
-
-  .cd-title-row > div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important; /* Obliga al centro */
-    width: 100% !important;
-  }
-
-  .cd-title-area {
-    display: flex !important;
-    justify-content: center !important;
-    width: 100% !important;
-    margin-bottom: 0.5rem !important;
-  }
-  
-  .cd-title-area h2, 
-  .cd-author {
-    color: black !important;
-    text-align: center !important;
-  }
-  
-  /* Centrado de Metadatos */
-  .cd-meta-bar {
-    display: flex !important;
-    flex-direction: row !important;
-    background-color: transparent !important;
-    border: 1px solid #ccc !important;
-    margin: 0 auto 2rem auto !important;
-    width: 100% !important; 
-    max-width: 600px !important; /* Evita que se estire demasiado */
-    justify-content: center !important; /* Centrado estricto */
-    align-items: center !important;
     flex-wrap: wrap !important;
-    padding: 1rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    padding: 0.8rem 1rem !important; 
+    /* MARGEN SUPERIOR DE 1.5cm AÑADIDO AQUÍ */
+    margin: 1cm auto 1.5rem auto !important;
+    max-width: 680px !important; 
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    box-sizing: border-box !important;
-    gap: 2rem !important;
+  }
+
+  /* 1. TÍTULO Y AUTOR (Lado Izquierdo) */
+  .cd-header {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 45% !important; 
+    margin: 0 !important;
+    padding: 0 1rem 0 0 !important; 
+    border-right: 1px solid #ddd !important;
+  }
+
+  .cd-title-row, .cd-title-row > div, .cd-title-area {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  .cd-title-area h2 {
+    color: black !important;
+    text-align: center !important;
+    font-size: 1.5rem !important; 
+    margin-bottom: 0.2rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  .cd-author {
+    color: #444 !important; 
+    text-align: center !important;
+    font-size: 0.85rem !important;
+    margin: 0 !important;
+  }
+  
+  /* 2. METADATOS (Lado Derecho) */
+  .cd-meta-bar {
+    display: contents !important; 
   }
 
   .cd-meta-item {
-    align-items: center !important; /* Centra el label y el valor */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    margin: 0 0.8rem !important;
   }
   
-  .cd-meta-label { color: #555 !important; text-align: center !important; }
-  .cd-meta-value { color: black !important; text-align: center !important; }
+  .cd-meta-label { 
+    color: #666 !important; 
+    font-size: 0.65rem !important; 
+  }
+  
+  .cd-meta-value { 
+    color: black !important; 
+    font-size: 0.85rem !important; 
+  }
 
-  /* Centrado de Etiquetas (Tags) */
+  /* 3. ETIQUETAS (Parte Inferior, a todo lo ancho) */
   .cd-meta-tags-wrapper {
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
-    margin-top: 1rem !important;
+    margin-top: 0.8rem !important; 
+    padding-top: 0.6rem !important;
+    border-top: 1px dashed #eee !important;
   }
   
   .cd-tags-container {
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
+    gap: 4px !important;
   }
   
   .cd-tag {
-    background-color: #f1f5f9 !important;
-    color: #334155 !important;
-    border: 1px solid #cbd5e1 !important;
+    background-color: transparent !important; 
+    color: #555 !important;
+    border: 1px solid #ccc !important;
+    padding: 0.1rem 0.4rem !important; 
+    font-size: 0.65rem !important; 
   }
   
-  /* Contenedor de la Letra */
+  /* 4. Contenedor de la Letra Monoespaciada */
   .cd-content-area {
     background-color: transparent !important;
     border: none !important;
@@ -462,27 +488,27 @@
     height: auto !important;
   }
 
-  /* Letra alineada a la izquierda pero en bloque central */
   .cd-lyrics {
     display: block !important; 
     width: fit-content !important; 
-    margin: 0 auto !important; /* Centrado horizontal */
+    margin: 0 auto !important; 
     padding: 0 !important;
     
     page-break-inside: auto !important;
     break-inside: auto !important;
     
     font-size: 14px !important;
-    font-family: 'Courier New', Courier, monospace !important; /* Mantiene acordes precisos */
+    font-family: 'Courier New', Courier, monospace !important; 
     text-align: left !important;
     orphans: 3 !important;
     widows: 3 !important;
     color: black !important;
+    
     white-space: pre !important; 
   }
 }
 
 @page {
   size: auto;
-  margin: 1.5cm; /* Doble seguro de margen para la hoja */
+  margin: 1.5cm; 
 }

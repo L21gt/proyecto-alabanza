@@ -91,78 +91,82 @@ const CancionDetalle: React.FC = () => {
 
   return (
     <div className="cancion-detalle-container">
-      <header className="cd-header">
-        
-        <div className="cd-top-row">
-          <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
-            &larr; Volver
-          </button>
+      
+      {/* NUEVO CONTENEDOR: Agrupa todo el encabezado para unificarlo en Impresión */}
+      <div className="cd-print-header-box">
+        <header className="cd-header">
+          
+          <div className="cd-top-row">
+            <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
+              &larr; Volver
+            </button>
 
-          <div className="cd-actions-right">
-            <button onClick={() => window.print()} className="cd-print-btn">
-              🖨️ Imprimir PDF
-            </button>
-            
-            {song.video_link && (
-              <a href={song.video_link} target="_blank" rel="noreferrer" className="cd-video-btn">
-                🎥 YouTube
-              </a>
-            )}
-          </div>
-        </div>
-
-        {role === 'Admin' && (
-          <div className="admin-controls-row">
-            <button 
-              className="cd-btn-edit"
-              onClick={() => navigate(`/cancion/editar/${song.id}`)}
-            >
-              ✏️ Editar
-            </button>
-            <button 
-              className="cd-btn-history"
-              onClick={() => navigate(`/cancion/historial/${song.id}`)}
-            >
-              📜 Historial
-            </button>
-            <button 
-              className="cd-btn-delete"
-              onClick={handleDelete}
-            >
-              🗑️ Eliminar
-            </button>
-          </div>
-        )}
-        
-        <div className="cd-title-row">
-          <div>
-            <div className="cd-title-area">
-              <h2>{song.title}</h2>
-              {song.version && <span className="cd-version-badge">{song.version}</span>}
-              {song.status === 'Pendiente' && <span className="cd-status-badge cd-status-pending">En Revisión</span>}
-              {song.status === 'Borrador' && <span className="cd-status-badge cd-status-draft">Borrador</span>}
+            <div className="cd-actions-right">
+              <button onClick={() => window.print()} className="cd-print-btn">
+                🖨️ Imprimir PDF
+              </button>
+              
+              {song.video_link && (
+                <a href={song.video_link} target="_blank" rel="noreferrer" className="cd-video-btn">
+                  🎥 YouTube
+                </a>
+              )}
             </div>
-            <p className="cd-author">{song.author}</p>
           </div>
-        </div>
-      </header>
 
-      <div className="cd-meta-bar">
-        <div className="cd-meta-item">
-          <span className="cd-meta-label">Tono:</span>
-          <span className="cd-meta-value">{currentKey}</span>
-        </div>
-        <div className="cd-meta-item">
-          <span className="cd-meta-label">Tempo:</span>
-          <span className="cd-meta-value">{song.tempo ? `${song.tempo} BPM` : 'N/A'}</span>
-        </div>
-        <div className="cd-meta-item">
-          <span className="cd-meta-label">Categoría:</span>
-          <span className="cd-meta-value">{song.category}</span>
-        </div>
-        
-        <div className="cd-meta-tags-wrapper">
-          {renderTags()}
+          {role === 'Admin' && (
+            <div className="admin-controls-row">
+              <button 
+                className="cd-btn-edit"
+                onClick={() => navigate(`/cancion/editar/${song.id}`)}
+              >
+                ✏️ Editar
+              </button>
+              <button 
+                className="cd-btn-history"
+                onClick={() => navigate(`/cancion/historial/${song.id}`)}
+              >
+                📜 Historial
+              </button>
+              <button 
+                className="cd-btn-delete"
+                onClick={handleDelete}
+              >
+                🗑️ Eliminar
+              </button>
+            </div>
+          )}
+          
+          <div className="cd-title-row">
+            <div>
+              <div className="cd-title-area">
+                <h2>{song.title}</h2>
+                {song.version && <span className="cd-version-badge">{song.version}</span>}
+                {song.status === 'Pendiente' && <span className="cd-status-badge cd-status-pending">En Revisión</span>}
+                {song.status === 'Borrador' && <span className="cd-status-badge cd-status-draft">Borrador</span>}
+              </div>
+              <p className="cd-author">{song.author}</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="cd-meta-bar">
+          <div className="cd-meta-item">
+            <span className="cd-meta-label">Tono:</span>
+            <span className="cd-meta-value">{currentKey}</span>
+          </div>
+          <div className="cd-meta-item">
+            <span className="cd-meta-label">Tempo:</span>
+            <span className="cd-meta-value">{song.tempo ? `${song.tempo} BPM` : 'N/A'}</span>
+          </div>
+          <div className="cd-meta-item">
+            <span className="cd-meta-label">Categoría:</span>
+            <span className="cd-meta-value">{song.category}</span>
+          </div>
+          
+          <div className="cd-meta-tags-wrapper">
+            {renderTags()}
+          </div>
         </div>
       </div>
 
