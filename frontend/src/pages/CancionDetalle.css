@@ -124,15 +124,6 @@
   flex-wrap: wrap;
 }
 
-.print-controls {
-  padding: 0.4rem;
-  border-radius: 4px;
-  border: 1px solid #475569;
-  background-color: #1e293b;
-  color: #e2e8f0;
-  font-size: 0.85rem;
-}
-
 .cd-print-btn, .cd-video-btn {
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
@@ -280,11 +271,6 @@
     text-align: center;
   }
   
-  .print-controls {
-    flex-grow: 1;
-    font-size: 0.75rem;
-  }
-
   .admin-controls-row {
     margin-bottom: 1rem;
     justify-content: space-between; 
@@ -351,10 +337,11 @@
 }
 
 /* =========================================================
-   IMPRESIÓN (PDF) PARA CANCIÓN INDIVIDUAL
+   IMPRESIÓN (PDF) PARA CANCIÓN INDIVIDUAL (DEFINTIVO)
    ========================================================= */
+
 @media print {
-  /* Reseteo absoluto para que el navegador controle la paginación con su flujo normal */
+  /* Reseteo maestro */
   html, body, #root {
     background-color: white !important;
     margin: 0 !important;
@@ -365,21 +352,20 @@
     overflow: visible !important;
   }
 
-  /* El truco del Padding: Convertimos al contenedor de la canción en los márgenes de la página física */
+  /* El contenedor recibe un padding de seguridad para evitar desbordes */
   .cancion-detalle-container {
     background-color: white !important;
     color: black !important;
     box-shadow: none !important;
     border: none !important;
-    margin: 0 !important;
-    /* ESTE ES EL MARGEN DE IMPRESIÓN (1.5cm a la redonda) */
-    padding: 1.5cm 1.5cm !important;
+    margin: 0 auto !important;
+    padding: 1.5cm !important; /* Empuja todo hacia el centro de la hoja */
     width: 100% !important;
     max-width: none !important;
-    box-sizing: border-box !important;
     height: auto !important;
     min-height: auto !important;
     display: block !important; 
+    box-sizing: border-box !important;
   }
   
   /* Ocultar interfaz de navegación web */
@@ -388,47 +374,76 @@
     display: none !important;
   }
   
-  /* Encabezado */
-  .cd-header {
-    display: block !important;
+  /* --- SOBREESCRIBIR LAS REGLAS DE ESCRITORIO --- */
+  
+  /* Centrado forzado del Título y Autor */
+  .cd-title-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* Obliga al centro */
+    justify-content: center !important;
     width: 100% !important;
-    text-align: center !important; 
     margin-bottom: 2rem !important;
-    padding-top: 0 !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+  }
+
+  .cd-title-row > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* Obliga al centro */
+    width: 100% !important;
   }
 
   .cd-title-area {
     display: flex !important;
     justify-content: center !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
   }
   
   .cd-title-area h2, 
   .cd-author {
     color: black !important;
+    text-align: center !important;
   }
   
-  /* Metadatos */
+  /* Centrado de Metadatos */
   .cd-meta-bar {
     display: flex !important;
+    flex-direction: row !important;
     background-color: transparent !important;
     border: 1px solid #ccc !important;
-    margin-bottom: 2rem !important;
+    margin: 0 auto 2rem auto !important;
     width: 100% !important; 
-    justify-content: center !important;
+    max-width: 600px !important; /* Evita que se estire demasiado */
+    justify-content: center !important; /* Centrado estricto */
+    align-items: center !important;
     flex-wrap: wrap !important;
     padding: 1rem !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     box-sizing: border-box !important;
+    gap: 2rem !important;
+  }
+
+  .cd-meta-item {
+    align-items: center !important; /* Centra el label y el valor */
   }
   
-  .cd-meta-label { color: #555 !important; }
-  .cd-meta-value { color: black !important; }
+  .cd-meta-label { color: #555 !important; text-align: center !important; }
+  .cd-meta-value { color: black !important; text-align: center !important; }
+
+  /* Centrado de Etiquetas (Tags) */
+  .cd-meta-tags-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin-top: 1rem !important;
+  }
   
   .cd-tags-container {
+    display: flex !important;
     justify-content: center !important;
+    width: 100% !important;
   }
   
   .cd-tag {
@@ -447,45 +462,27 @@
     height: auto !important;
   }
 
-  /* Letra (Vista Normal a 1 Columna) */
+  /* Letra alineada a la izquierda pero en bloque central */
   .cd-lyrics {
     display: block !important; 
     width: fit-content !important; 
-    margin: 0 auto !important; /* Centrado perfecto horizontal */
+    margin: 0 auto !important; /* Centrado horizontal */
     padding: 0 !important;
     
-    /* Permite que el texto fluya de una página a otra con suavidad */
     page-break-inside: auto !important;
     break-inside: auto !important;
     
     font-size: 14px !important;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif !important;
+    font-family: 'Courier New', Courier, monospace !important; /* Mantiene acordes precisos */
     text-align: left !important;
     orphans: 3 !important;
     widows: 3 !important;
     color: black !important;
-    white-space: pre-wrap !important; 
-  }
-
-  /* Letra (Vista a 2 Columnas) */
-  .cd-lyrics.print-two-columns {
-    width: 100% !important; /* Destruye el 'fit-content' para usar toda la hoja dividida */
-    margin: 0 !important; /* Aseguramos que inicie en el borde izquierdo virtual que creamos con el padding */
-    column-count: 2 !important;
-    column-gap: 3rem !important; 
-    column-rule: 1px dashed #ccc;
-    text-align: left !important;
+    white-space: pre !important; 
   }
 }
 
-/* 
- * ================================================================
- * ALERTA NAVEGADOR
- * Le decimos a Chrome que ponga su margen físico a 0.
- * Nosotros manejamos el margen real con el padding de .cancion-detalle-container
- * ================================================================
- */
 @page {
   size: auto;
-  margin: 0mm; 
+  margin: 1.5cm; /* Doble seguro de margen para la hoja */
 }

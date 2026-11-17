@@ -20,8 +20,6 @@ const CancionDetalle: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentKey, setCurrentKey] = useState<string>('');
-  
-  const [printColumns, setPrintColumns] = useState<1 | 2>(1);
 
   useEffect(() => {
     const fetchSong = async () => {
@@ -95,22 +93,12 @@ const CancionDetalle: React.FC = () => {
     <div className="cancion-detalle-container">
       <header className="cd-header">
         
-        {/* Fila Superior: Extraída de estilos en línea */}
         <div className="cd-top-row">
           <button className="btn-back" onClick={() => navigate(repertorioId ? `/repertorios/${repertorioId}` : '/catalogo')}>
             &larr; Volver
           </button>
 
           <div className="cd-actions-right">
-            <select 
-              className="print-controls"
-              value={printColumns}
-              onChange={(e) => setPrintColumns(Number(e.target.value) as 1 | 2)}
-            >
-              <option value={1}>📄 1 Columna</option>
-              <option value={2}>📖 2 Columnas</option>
-            </select>
-
             <button onClick={() => window.print()} className="cd-print-btn">
               🖨️ Imprimir PDF
             </button>
@@ -123,7 +111,6 @@ const CancionDetalle: React.FC = () => {
           </div>
         </div>
 
-        {/* Fila Admin: Extraída de estilos en línea */}
         {role === 'Admin' && (
           <div className="admin-controls-row">
             <button 
@@ -180,7 +167,7 @@ const CancionDetalle: React.FC = () => {
       </div>
 
       <div className="cd-content-area">
-        <pre className={`cd-lyrics ${printColumns === 2 ? 'print-two-columns' : ''}`}>
+        <pre className="cd-lyrics">
           {song.content}
         </pre>
       </div>
